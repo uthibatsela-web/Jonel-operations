@@ -1,0 +1,774 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>JONEL Operations Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f6f7;--panel:#fff;--text:#121212;--muted:#737373;--line:#e7e7e7;
+  --dark:#0d0d0d;--dark2:#1b1b1b;--soft:#f0f0f0;--warn:#9a6700;--danger:#b42318;--ok:#067647;
+  --shadow:0 8px 30px rgba(0,0,0,.06);--radius:18px;
+}
+*{box-sizing:border-box} body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.app{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
+.sidebar{background:var(--dark);color:#fff;padding:24px 16px;position:sticky;top:0;height:100vh}
+.brand{font-weight:900;letter-spacing:.16em;font-size:20px;padding:4px 10px 22px}.brand small{display:block;font-size:9px;letter-spacing:.35em;color:#bdbdbd;margin-top:4px}
+.nav button{width:100%;border:0;background:transparent;color:#bdbdbd;text-align:left;padding:12px 13px;border-radius:12px;margin:2px 0;font-weight:650}
+.nav button:hover,.nav button.active{background:#242424;color:#fff}
+.sidebar-footer{position:absolute;bottom:20px;left:16px;right:16px;color:#8b8b8b;font-size:12px}
+.main{min-width:0}
+.topbar{height:78px;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:20}
+.topbar h1{font-size:22px;margin:0}.sub{color:var(--muted);font-size:12px;margin-top:3px}
+.actions{display:flex;gap:10px;align-items:center}
+.btn{border:1px solid var(--line);background:#fff;padding:10px 14px;border-radius:11px;font-weight:750}
+.btn.primary{background:#111;color:white;border-color:#111}.btn.danger{color:#fff;background:var(--danger);border-color:var(--danger)}
+.content{padding:26px 28px 80px;max-width:1500px;margin:auto}
+.page{display:none}.page.active{display:block}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.kpi{padding:18px}.kpi .label{color:var(--muted);font-size:12px;font-weight:700}.kpi .value{font-size:30px;font-weight:900;margin-top:9px}.kpi .foot{font-size:11px;color:var(--muted);margin-top:6px}
+.grid2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-top:16px}
+.section{padding:20px}.section h3{margin:0 0 15px;font-size:15px}.section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:15px}
+.mini-bars{height:210px;display:flex;align-items:flex-end;gap:12px;padding:12px 0 2px}
+.bar-wrap{flex:1;text-align:center}.bar{background:#171717;border-radius:9px 9px 3px 3px;min-height:8px}.bar-label{font-size:10px;color:var(--muted);margin-top:8px}.bar-value{font-size:10px;font-weight:800;margin-bottom:4px}
+.list{display:flex;flex-direction:column;gap:9px}.list-row{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);padding:9px 0}.list-row:last-child{border-bottom:0}
+.badge{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:800;background:var(--soft);white-space:nowrap}
+.badge.ok{background:#ecfdf3;color:var(--ok)}.badge.warn{background:#fffaeb;color:var(--warn)}.badge.danger{background:#fef3f2;color:var(--danger)}.badge.dark{background:#111;color:#fff}
+.toolbar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:15px;flex-wrap:wrap}
+.search{min-width:240px;border:1px solid var(--line);padding:10px 12px;border-radius:11px;background:#fff}
+.table-card{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:800px}.table th,.table td{text-align:left;padding:13px 14px;border-bottom:1px solid var(--line);font-size:12px}.table th{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}.table tr:hover td{background:#fafafa}
+.progress{height:7px;background:#ededed;border-radius:999px;overflow:hidden}.progress span{display:block;height:100%;background:#111;border-radius:inherit}
+.board{display:grid;grid-template-columns:repeat(6,minmax(220px,1fr));gap:12px;overflow:auto;padding-bottom:10px}.column{background:#eceeef;border-radius:16px;padding:12px;min-height:500px}.column h4{margin:2px 3px 10px;font-size:12px}.column-count{float:right;color:var(--muted);font-size:10px}
+.order-card{background:#fff;border:1px solid #ddd;border-radius:14px;padding:12px;margin-bottom:10px;box-shadow:0 3px 10px rgba(0,0,0,.04)}.order-card .client{font-weight:850;font-size:12px}.order-card .meta{font-size:10px;color:var(--muted);margin:5px 0 9px}.order-card .card-actions{display:flex;gap:6px}.tiny{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 8px;font-size:10px;font-weight:750}
+.inventory-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.stock-card{padding:17px}.stock-top{display:flex;justify-content:space-between;gap:10px}.stock-name{font-weight:850}.stock-qty{font-size:26px;font-weight:900;margin:14px 0 3px}.stock-unit{font-size:11px;color:var(--muted)}
+.timer-shell{max-width:650px}.timer-card{padding:24px;text-align:center}.timer{font-variant-numeric:tabular-nums;font-size:52px;font-weight:950;letter-spacing:-.03em;margin:22px 0}.timer-title{font-weight:850}.timer-sub{font-size:12px;color:var(--muted);margin-top:6px}.timer-controls{display:flex;gap:10px;justify-content:center}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.field label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:800;margin-bottom:6px}.field input,.field select,.field textarea{width:100%;border:1px solid #dcdcdc;background:#fff;border-radius:10px;padding:10px}.field textarea{min-height:80px;resize:vertical}
+.employee-strip{display:flex;gap:10px;overflow:auto;padding-bottom:4px}.employee-chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 12px;font-size:11px;font-weight:750}.employee-chip.active{background:#111;color:#fff;border-color:#111}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:none;align-items:center;justify-content:center;padding:18px}.modal-backdrop.open{display:flex}.modal{background:#fff;border-radius:20px;width:min(760px,100%);max-height:90vh;overflow:auto;padding:22px;box-shadow:0 30px 90px rgba(0,0,0,.3)}.modal h2{margin:0 0 18px}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.mobile-menu{display:none;border:0;background:#111;color:#fff;width:40px;height:40px;border-radius:10px}
+.empty{color:var(--muted);font-size:12px;padding:20px;text-align:center}
+.note{font-size:11px;color:var(--muted);line-height:1.5}
+.metric-line{display:flex;align-items:center;gap:12px;margin:10px 0}.metric-line strong{min-width:95px;font-size:11px}.metric-line .progress{flex:1}
+.toast{position:fixed;right:22px;bottom:22px;background:var(--dark);color:#fff;padding:12px 16px;border-radius:12px;font-size:12px;font-weight:600;z-index:200;opacity:0;transform:translateY(12px);pointer-events:none;transition:.25s;box-shadow:0 10px 30px rgba(16,44,64,.35)}.toast.show{opacity:1;transform:translateY(0)}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.inventory-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){
+  .app{display:block}.sidebar{position:fixed;left:-270px;z-index:90;width:250px;transition:.25s}.sidebar.open{left:0}.main{width:100%}.mobile-menu{display:block}
+  .topbar{padding:0 15px;height:70px}.topbar h1{font-size:17px}.content{padding:16px 14px 85px}.kpis{grid-template-columns:repeat(2,1fr);gap:9px}.kpi{padding:14px}.kpi .value{font-size:24px}
+  .inventory-grid{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.grid2{gap:11px}.timer{font-size:42px}.actions .desktop-only{display:none}.board{grid-template-columns:repeat(6,220px)}
+}
+
+/* ===== HR SUITE THEME ALIGNMENT ===== */
+:root{
+  --bg:#f3f8fb;--panel:#ffffff;--text:#0f1b28;--muted:#607183;--line:#dbe6ed;
+  --dark:#102c40;--dark2:#183a52;--soft:#eaf4f9;--accent:#0797c5;--accent-dark:#087fa8;
+  --accent-soft:#e5f5fb;--warn:#8a5a08;--danger:#c32835;--ok:#208557;
+  --shadow:0 1px 2px rgba(16,44,64,.05), 0 10px 26px rgba(16,44,64,.07);
+  --shadow-lift:0 4px 10px rgba(16,44,64,.06), 0 16px 34px rgba(16,44,64,.11);
+  --radius:14px;--display-font:'Manrope',Inter,ui-sans-serif,sans-serif;
+}
+body{background:radial-gradient(1100px 560px at 100% -8%,#eaf6fb 0%,rgba(234,246,251,0) 62%),var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.app{grid-template-columns:235px 1fr}
+.sidebar{background:var(--dark);padding:20px 14px;border-right:1px solid rgba(255,255,255,.04)}
+.brand{display:flex;align-items:center;gap:10px;padding:0 8px 20px;letter-spacing:0;font-size:15px}
+.brand-badge{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(155deg,var(--accent),var(--accent-dark));color:#fff;font-size:13px;font-weight:900;letter-spacing:0;font-family:var(--display-font);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18),0 4px 10px rgba(7,151,197,.35)}
+.brand-copy{line-height:1.15}.brand-copy strong{display:block;font-size:14px;letter-spacing:-.01em;font-family:var(--display-font);font-weight:800}
+.brand-copy small{display:block;margin-top:4px;font-size:10px;letter-spacing:.02em;color:#b7c7d2;font-weight:600}
+.nav button{color:#bfd0dc;padding:10px 12px;border-radius:10px;font-weight:600;display:flex;align-items:center;gap:11px;font-size:13px;transition:background-color .15s ease,color .15s ease}
+.nav button svg{width:17px;height:17px;flex:0 0 17px;opacity:.85;transition:opacity .15s ease}
+.nav button:hover{background:rgba(255,255,255,.055);color:#fff}.nav button:hover svg{opacity:1}
+.nav button.active{background:#23465f;color:#fff;font-weight:700}.nav button.active svg{opacity:1}
+.sidebar-footer{background:#183b54;border-radius:12px;padding:12px;left:14px;right:14px;bottom:15px;color:#b9cedb;line-height:1.35}
+.topbar{height:66px;background:#fff;border-bottom:1px solid var(--line);box-shadow:none;padding:0 22px}
+.topbar h1{font-size:14px;font-weight:800;letter-spacing:-.01em}.topbar .sub{font-size:10px;color:var(--muted);margin-top:2px}
+.content{padding:25px 22px 80px}
+.page-title-block{margin-bottom:22px}
+.page-title-block h2{margin:0;font-size:30px;line-height:1.05;letter-spacing:-.03em;font-family:var(--display-font);font-weight:800;color:#0b1c2b;position:relative;display:inline-block;padding-bottom:13px}
+.page-title-block h2::after{content:"";position:absolute;left:1px;bottom:0;width:56px;border-top:2.5px dashed var(--accent);opacity:.55}
+.page-title-block p{margin:7px 0 0;color:var(--muted);font-size:13px}
+.card{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:var(--radius)}
+.kpis{gap:12px}.kpi{padding:17px 18px;background:linear-gradient(135deg,#fff 0%,#f1f8fc 100%);position:relative;overflow:hidden;transition:box-shadow .18s ease,transform .18s ease}
+.kpi:hover{box-shadow:var(--shadow-lift);transform:translateY(-1px)}
+.kpi-icon{position:absolute;left:18px;top:17px;width:38px;height:38px;border-radius:12px;background:linear-gradient(155deg,var(--accent),var(--accent-dark));display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 4px 10px rgba(7,151,197,.28)}
+.kpi-icon svg{width:18px;height:18px}
+.kpi .label,.kpi .value,.kpi .foot{margin-left:50px}.kpi .label{color:#5d6d7e;font-size:10px;letter-spacing:.04em;text-transform:uppercase;font-weight:700}.kpi .value{font-size:23px;margin-top:5px;color:#0d1a26;font-variant-numeric:tabular-nums;font-weight:800}.kpi .foot{margin-top:4px;font-size:10px}
+.section{padding:18px 20px}.section h3,.section-head h3{color:#0e1a26;font-size:14px;font-weight:750}
+.btn{border-color:var(--line);border-radius:10px;color:#1b3243;transition:border-color .15s ease,color .15s ease,box-shadow .15s ease,transform .1s ease,background-color .15s ease}
+.btn:hover{border-color:var(--accent);color:var(--accent-dark)}.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:white;box-shadow:0 4px 14px rgba(7,151,197,.3)}.btn.primary:hover{background:var(--accent-dark);border-color:var(--accent-dark);color:#fff;box-shadow:0 6px 18px rgba(7,151,197,.38)}
+.btn.danger{background:var(--danger);border-color:var(--danger)}.btn.danger:hover{filter:brightness(1.08);color:#fff}
+.search,.field input,.field select,.field textarea{border-color:#d3e0e8;border-radius:9px;transition:border-color .15s ease,box-shadow .15s ease}
+.search:focus,.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(7,151,197,.14)}
+.badge{background:#e7f1f6;color:#315064;gap:5px}
+.badge.ok{background:#dff2e8;color:#23845a}.badge.ok::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;flex:0 0 5px}
+.badge.warn{background:#f9ecd5;color:#8b5b0a}.badge.warn::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;flex:0 0 5px}
+.badge.danger{background:#fde4e6;color:#c72c3b}.badge.danger::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;flex:0 0 5px}
+.badge.dark{background:#dff2fa;color:#087da3}
+.progress{background:#e4edf2}.progress span{background:linear-gradient(90deg,var(--accent),var(--accent-dark));transition:width .25s ease}.bar{background:linear-gradient(180deg,var(--accent),var(--accent-dark));transition:height .25s ease}
+.table th{background:#f8fbfd;color:#617487}.table td{background:#fff}.table tr{transition:background-color .1s ease}.table tr:hover td{background:#f8fcfe}
+.column{background:#e8f1f6;border:1px solid #d7e5ed;border-radius:13px}
+.order-card{border-color:#d7e4ec;border-radius:12px;box-shadow:0 2px 7px rgba(20,59,82,.04);transition:transform .15s ease,box-shadow .15s ease}
+.order-card:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(20,59,82,.11)}
+.stock-card{background:linear-gradient(135deg,#fff 0%,#f3f9fc 100%);transition:box-shadow .18s ease,transform .18s ease}.stock-card:hover{box-shadow:var(--shadow-lift);transform:translateY(-1px)}
+.stock-qty{font-family:var(--display-font);font-variant-numeric:tabular-nums}
+.employee-chip{border-color:#d6e3ea;color:#3f596b;transition:all .15s ease}.employee-chip.active{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 3px 10px rgba(7,151,197,.3)}
+.timer-card{background:linear-gradient(180deg,#fff,#f5fbfe);border:1.5px dashed rgba(7,151,197,.4)!important}
+.timer{color:#0e2f44;font-family:var(--display-font);font-variant-numeric:tabular-nums}
+.tiny{border-color:#d7e3ea;color:#315064;transition:all .12s ease}.tiny:hover{border-color:var(--accent);color:var(--accent-dark)}
+.modal{border-radius:18px;animation:modalIn .18s ease}.modal h2,.modal .section-head h2{font-family:var(--display-font);font-weight:800;letter-spacing:-.01em}
+.modal-backdrop{backdrop-filter:blur(2px)}
+@keyframes modalIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.mobile-menu{background:var(--dark)}
+@media(max-width:760px){.app{display:block}.sidebar{width:235px;left:-250px}.content{padding:16px 13px 85px}.topbar{padding:0 13px}.page-title-block h2{font-size:24px}.kpi-icon{width:32px;height:32px;border-radius:10px}.kpi-icon svg{width:15px;height:15px}.kpi .label,.kpi .value,.kpi .foot{margin-left:42px}}
+
+/* ===== additions: order detail / timeline / sync ===== */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin-bottom:14px}
+.detail-field .k{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.detail-field .v{margin-top:3px;font-size:13px}
+.timeline-item{display:flex;gap:8px;font-size:12px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.timeline-item:last-child{border-bottom:0}
+.timeline-ts{color:var(--muted);white-space:nowrap;font-size:11px}
+.stage-select-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+.timeline-head{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-bottom:6px}
+.sync-note{font-size:10px;color:var(--muted);margin-top:2px}
+
+/* ===== DARK MODE (black) ===== */
+:root{
+  --bg:#08090b;--panel:#111318;--text:#eef1f3;--muted:#8b95a1;--line:#20242b;
+  --dark:#000000;--dark2:#0c0e11;--soft:#1a1e24;
+  --accent:#12a8dd;--accent-dark:#0d86b3;--accent-soft:#0f2530;
+  --warn:#f0b429;--danger:#ff6b76;--ok:#4ade8a;
+  --shadow:0 1px 0 rgba(255,255,255,.04) inset,0 12px 28px rgba(0,0,0,.55);
+  --shadow-lift:0 1px 0 rgba(255,255,255,.05) inset,0 18px 38px rgba(0,0,0,.65);
+}
+body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%,rgba(0,0,0,0) 62%),var(--bg);color:var(--text)}
+.sidebar{background:var(--dark);border-right:1px solid rgba(255,255,255,.06)}
+.sidebar-footer{background:#0f1216;color:#8b95a1}
+.topbar{background:rgba(8,9,11,.86);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.card{background:var(--panel);border-color:var(--line)}
+.kpi{background:linear-gradient(135deg,rgba(18,168,221,.08),rgba(255,255,255,.015))}
+.kpi .value{color:#f2f5f7}.kpi .label{color:#8b95a1}
+.page-title-block h2{color:#f2f5f7}
+.section h3,.section-head h3{color:#e7ecef}
+.search,.field input,.field select,.field textarea{background:#14171c;border-color:#262b32;color:var(--text)}
+.search::placeholder,.field input::placeholder,.field textarea::placeholder{color:#5b636d}
+.btn{background:#14171c;border-color:var(--line);color:#dbe3ea}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#04141b}
+.btn.primary:hover{background:var(--accent-dark);border-color:var(--accent-dark);color:#04141b}
+.btn.danger{background:var(--danger);border-color:var(--danger);color:#1a0506}
+.tiny{background:#14171c;border-color:#262b32;color:#c3ccd4}
+.badge{background:rgba(255,255,255,.07);color:#c3ccd4}
+.badge.ok{background:rgba(74,222,138,.15);color:var(--ok)}
+.badge.warn{background:rgba(240,180,41,.15);color:var(--warn)}
+.badge.danger{background:rgba(255,107,118,.15);color:var(--danger)}
+.badge.dark{background:rgba(18,168,221,.18);color:var(--accent)}
+.progress{background:#20242b}
+.table th{background:#14171c;color:#8b95a1;border-color:var(--line)}
+.table td{background:var(--panel);border-color:var(--line)}
+.table tr:hover td{background:#161a20}
+.column{background:#121519;border-color:var(--line)}
+.order-card{background:#171a1f;border-color:var(--line);box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.stock-card{background:linear-gradient(135deg,rgba(18,168,221,.08),rgba(255,255,255,.015))}
+.stock-qty{color:#eef6fa}
+.employee-chip{background:#14171c;border-color:#262b32;color:#c3ccd4}
+.employee-chip.active{background:var(--accent);border-color:var(--accent);color:#04141b}
+.timer-card{background:linear-gradient(180deg,rgba(18,168,221,.07),rgba(255,255,255,.01));border:1.5px dashed rgba(18,168,221,.45)!important}
+.timer{color:#eef6fa}
+.modal{background:#12151a;border:1px solid rgba(255,255,255,.08);box-shadow:0 30px 90px rgba(0,0,0,.65)}
+.modal h2{color:#f2f5f7}
+.mobile-menu{background:#000}
+.empty{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><div class="brand-badge">JO</div><div class="brand-copy"><strong>JONEL Operations</strong><small>Sportswear Management</small></div></div>
+    <nav class="nav" id="nav"></nav>
+    <div class="sidebar-footer">Shared across the team · every phone sees the same data<br/>Tap ⟳ Sync to pull the latest</div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:11px">
+        <button class="mobile-menu" onclick="toggleSidebar()">☰</button>
+        <div><h1 id="pageTitle">Gaborone Head Office</h1><div class="sub" id="pageSubtitle">Operations period: August 2026</div></div>
+      </div>
+      <div class="actions">
+        <div class="desktop-only" style="text-align:right;margin-right:8px"><strong style="font-size:11px;display:block" id="whoAmI">Operations Admin</strong><span class="sub">JONEL Sportif</span></div>
+        <button class="btn" onclick="syncNow()">⟳ Sync</button>
+        <button class="btn desktop-only" onclick="resetDemo()">Reset demo</button>
+        <button class="btn primary" onclick="openOrderModal()">+ New Order</button>
+      </div>
+    </header>
+
+    <div class="content">
+      <section class="page active" id="page-dashboard">
+        <div class="page-title-block"><h2>Dashboard</h2><p>Overview of orders, production activity, inventory and staff workload.</p></div>
+        <div class="kpis" id="kpis"></div>
+        <div class="grid2">
+          <div class="card section"><div class="section-head"><h3>Orders per month</h3><span class="badge dark" id="yearBadge">2026</span></div><div class="mini-bars" id="monthlyBars"></div></div>
+          <div class="card section"><div class="section-head"><h3>Production status</h3><span class="badge">Live</span></div><div id="stageMetrics"></div></div>
+        </div>
+        <div class="grid2">
+          <div class="card section"><div class="section-head"><h3>Orders due soon</h3><button class="tiny" onclick="showPage('orders')">View orders</button></div><div class="list" id="dueSoon"></div></div>
+          <div class="card section"><div class="section-head"><h3>Staff working now</h3><button class="tiny" onclick="showPage('worklog')">Work log</button></div><div class="list" id="workingNow"></div></div>
+        </div>
+      </section>
+
+      <section class="page" id="page-orders">
+        <div class="page-title-block"><h2>Orders</h2><p>Manage customer orders, quantities, values and delivery deadlines.</p></div>
+        <div class="toolbar">
+          <input class="search" id="orderSearch" placeholder="Search client, order or product..." oninput="renderOrders()"/>
+          <div style="display:flex;gap:8px"><select class="btn" id="orderStatusFilter" onchange="renderOrders()"><option value="">All statuses</option></select><button class="btn primary" onclick="openOrderModal()">+ New Order</button></div>
+        </div>
+        <div class="card table-card"><table class="table"><thead><tr><th>Order</th><th>Client</th><th>Product</th><th>Qty</th><th>Due</th><th>Status</th><th>Progress</th><th>Value</th><th></th></tr></thead><tbody id="ordersBody"></tbody></table></div>
+      </section>
+
+      <section class="page" id="page-production">
+        <div class="page-title-block"><h2>Production</h2><p>Track every sportswear order from design through delivery.</p></div>
+        <div class="toolbar"><div><strong>Production Board</strong><div class="sub">Move orders through the manufacturing workflow.</div></div><button class="btn primary" onclick="openOrderModal()">+ New Order</button></div>
+        <div class="board" id="productionBoard"></div>
+      </section>
+
+      <section class="page" id="page-inventory">
+        <div class="page-title-block"><h2>Inventory</h2><p>Monitor fabrics, trims, finished stock and production materials.</p></div>
+        <div class="toolbar"><input class="search" id="inventorySearch" placeholder="Search stock..." oninput="renderInventory()"/><button class="btn primary" onclick="openInventoryModal()">+ Add Stock Item</button></div>
+        <div class="inventory-grid" id="inventoryGrid"></div>
+      </section>
+
+      <section class="page" id="page-worklog">
+        <div class="page-title-block"><h2>Work Log</h2><p>Employees record the order and task they are working on.</p></div>
+        <div class="timer-shell">
+          <div class="employee-strip" id="employeeStrip"></div>
+          <div class="card timer-card" style="margin-top:14px">
+            <div class="form-grid" style="text-align:left">
+              <div class="field"><label>Order / Project</label><select id="timerOrder" onchange="syncTimerTask()"></select></div>
+              <div class="field"><label>Task</label><select id="timerTask"></select></div>
+            </div>
+            <div class="timer-sub" id="timerEmployeeLabel"></div>
+            <div class="timer" id="timerDisplay">00:00:00</div>
+            <div class="timer-title" id="timerStatus">Not currently clocked in</div>
+            <div class="timer-sub" id="timerProjectLabel">Choose an order and task, then start work.</div>
+            <div class="timer-controls" style="margin-top:18px">
+              <button class="btn primary" id="startBtn" onclick="startTimer()">▶ Start Work</button>
+              <button class="btn danger" id="stopBtn" onclick="stopTimer()" disabled>■ Stop</button>
+            </div>
+          </div>
+          <div class="card section" style="margin-top:14px"><div class="section-head"><h3>Today's work</h3><span class="badge" id="todayHoursBadge">0h 00m</span></div><div class="list" id="todayLogs"></div></div>
+        </div>
+      </section>
+
+      <section class="page" id="page-timesheets">
+        <div class="page-title-block"><h2>Timesheets</h2><p>Review employee work hours by day, month and project.</p></div>
+        <div class="toolbar"><div><strong>Employee Timesheets</strong><div class="sub">Hours by employee and project.</div></div><select class="btn" id="timesheetEmployee" onchange="renderTimesheets()"></select></div>
+        <div class="kpis" id="timeKpis"></div>
+        <div class="card table-card" style="margin-top:15px"><table class="table"><thead><tr><th>Date</th><th>Employee</th><th>Order</th><th>Task</th><th>Started</th><th>Ended</th><th>Hours</th><th>Notes</th></tr></thead><tbody id="timesheetBody"></tbody></table></div>
+      </section>
+
+      <section class="page" id="page-customers">
+        <div class="page-title-block"><h2>Customers</h2><p>View customer activity, order history and total value.</p></div>
+        <div class="toolbar"><input class="search" id="customerSearch" placeholder="Search customers..." oninput="renderCustomers()"/></div>
+        <div class="card table-card"><table class="table"><thead><tr><th>Customer</th><th>Contact</th><th>Phone</th><th>Orders</th><th>Units</th><th>Total Value</th><th>Last Order</th></tr></thead><tbody id="customersBody"></tbody></table></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="orderModal">
+  <div class="modal">
+    <div class="section-head"><h2>New Sportswear Order</h2><button class="tiny" onclick="closeModal('orderModal')">✕</button></div>
+    <form id="orderForm" onsubmit="saveOrder(event)">
+      <div class="form-grid">
+        <div class="field"><label>Client</label><input id="fClient" required placeholder="e.g. Gaborone United"/></div>
+        <div class="field"><label>Client Contact</label><input id="fContact" placeholder="Contact person"/></div>
+        <div class="field"><label>Client Phone</label><input id="fPhone" placeholder="+267 7..."/></div>
+        <div class="field"><label>Product</label><select id="fProduct" required></select></div>
+        <div class="field"><label>Quantity</label><input id="fQty" type="number" min="1" value="20" required/></div>
+        <div class="field"><label>Order Date</label><input id="fOrderDate" type="date" required/></div>
+        <div class="field"><label>Delivery Date</label><input id="fDue" type="date" required/></div>
+        <div class="field"><label>Order Value (P)</label><input id="fValue" type="number" min="0" step="0.01" value="0"/></div>
+        <div class="field"><label>Amount Paid (P)</label><input id="fPaid" type="number" min="0" step="0.01" value="0"/></div>
+        <div class="field"><label>Priority</label><select id="fPriority"><option>Normal</option><option>High</option><option>Urgent</option><option>Low</option></select></div>
+        <div class="field"><label>Assigned Employee</label><select id="fEmployee"></select></div>
+        <div class="field"><label>XS</label><input id="sizeXS" type="number" min="0" value="0"/></div>
+        <div class="field"><label>S</label><input id="sizeS" type="number" min="0" value="0"/></div>
+        <div class="field"><label>M</label><input id="sizeM" type="number" min="0" value="0"/></div>
+        <div class="field"><label>L</label><input id="sizeL" type="number" min="0" value="0"/></div>
+        <div class="field"><label>XL</label><input id="sizeXL" type="number" min="0" value="0"/></div>
+        <div class="field"><label>2XL</label><input id="size2XL" type="number" min="0" value="0"/></div>
+        <div class="field" style="grid-column:1/-1"><label>Notes</label><textarea id="fNotes" placeholder="Colours, fabric, printing method, client requirements..."></textarea></div>
+      </div>
+      <div class="modal-actions"><button type="button" class="btn" onclick="closeModal('orderModal')">Cancel</button><button class="btn primary" type="submit">Create Order</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="viewOrderModal">
+  <div class="modal" style="max-width:640px">
+    <div class="section-head"><h2 id="vNum">Order</h2><button class="tiny" onclick="closeModal('viewOrderModal')">✕</button></div>
+    <div id="viewOrderBody"></div>
+    <div class="modal-actions"><button class="btn danger" onclick="deleteOrderConfirm()">Delete Order</button><button class="btn" onclick="closeModal('viewOrderModal')">Close</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="inventoryModal">
+  <div class="modal" style="max-width:560px">
+    <div class="section-head"><h2>Add Stock Item</h2><button class="tiny" onclick="closeModal('inventoryModal')">✕</button></div>
+    <form onsubmit="saveInventory(event)">
+      <div class="form-grid">
+        <div class="field"><label>Item Name</label><input id="iName" required placeholder="e.g. Birdeye White 150gsm"/></div>
+        <div class="field"><label>Category</label><select id="iCategory"><option>Fabrics</option><option>Finished Products</option><option>Production Materials</option><option>Trims</option><option>Packaging</option><option>Office & Samples</option></select></div>
+        <div class="field"><label>Quantity</label><input id="iQty" required type="number" step=".1" min="0"/></div>
+        <div class="field"><label>Unit</label><select id="iUnit"><option>metres</option><option>units</option><option>rolls</option><option>boxes</option><option>litres</option></select></div>
+        <div class="field"><label>Minimum Stock</label><input id="iMin" required type="number" step=".1" min="0"/></div>
+        <div class="field"><label>Location</label><input id="iLocation" value="Office"/></div>
+      </div>
+      <div class="modal-actions"><button type="button" class="btn" onclick="closeModal('inventoryModal')">Cancel</button><button class="btn primary">Add Item</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="adjustModal">
+  <div class="modal" style="max-width:500px">
+    <div class="section-head"><h2>Stock Movement</h2><button class="tiny" onclick="closeModal('adjustModal')">✕</button></div>
+    <form onsubmit="saveAdjustment(event)">
+      <input type="hidden" id="aItemId"/>
+      <div class="field"><label>Movement</label><select id="aType"><option value="in">Stock In</option><option value="out">Stock Used / Out</option></select></div>
+      <div class="field" style="margin-top:12px"><label>Quantity</label><input id="aQty" type="number" min=".1" step=".1" required/></div>
+      <div class="field" style="margin-top:12px"><label>Reason / Order</label><input id="aReason" placeholder="e.g. JON-2026-0087 production"/></div>
+      <div class="modal-actions"><button type="button" class="btn" onclick="closeModal('adjustModal')">Cancel</button><button class="btn primary">Record Movement</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="stopModal">
+  <div class="modal" style="max-width:520px">
+    <div class="section-head"><h2>Finish Work Session</h2><button class="tiny" onclick="closeModal('stopModal')">✕</button></div>
+    <form onsubmit="confirmStopTimer(event)">
+      <div class="field"><label>Work completed</label><textarea id="stopNotes" required placeholder="Describe what you completed during this session..."></textarea></div>
+      <div class="modal-actions"><button type="button" class="btn" onclick="closeModal('stopModal')">Cancel</button><button class="btn primary">Save Work Log</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const timerOrder=document.getElementById("timerOrder");
+const timerTask=document.getElementById("timerTask");
+const timerEmployeeLabel=document.getElementById("timerEmployeeLabel");
+const timerDisplay=document.getElementById("timerDisplay");
+const timerStatus=document.getElementById("timerStatus");
+const timerProjectLabel=document.getElementById("timerProjectLabel");
+const startBtn=document.getElementById("startBtn");
+const stopBtn=document.getElementById("stopBtn");
+const todayHoursBadge=document.getElementById("todayHoursBadge");
+const todayLogs=document.getElementById("todayLogs");
+const timeKpis=document.getElementById("timeKpis");
+const timesheetBody=document.getElementById("timesheetBody");
+const customerSearch=document.getElementById("customerSearch");
+const customersBody=document.getElementById("customersBody");
+
+const fClient=document.getElementById("fClient");
+const fContact=document.getElementById("fContact");
+const fPhone=document.getElementById("fPhone");
+const fProduct=document.getElementById("fProduct");
+const fQty=document.getElementById("fQty");
+const fOrderDate=document.getElementById("fOrderDate");
+const fDue=document.getElementById("fDue");
+const fValue=document.getElementById("fValue");
+const fPaid=document.getElementById("fPaid");
+const fPriority=document.getElementById("fPriority");
+const fEmployee=document.getElementById("fEmployee");
+const sizeXS=document.getElementById("sizeXS");
+const sizeS=document.getElementById("sizeS");
+const sizeM=document.getElementById("sizeM");
+const sizeL=document.getElementById("sizeL");
+const sizeXL=document.getElementById("sizeXL");
+const size2XL=document.getElementById("size2XL");
+const fNotes=document.getElementById("fNotes");
+
+const iName=document.getElementById("iName");
+const iCategory=document.getElementById("iCategory");
+const iQty=document.getElementById("iQty");
+const iUnit=document.getElementById("iUnit");
+const iMin=document.getElementById("iMin");
+const iLocation=document.getElementById("iLocation");
+
+const aItemId=document.getElementById("aItemId");
+const aType=document.getElementById("aType");
+const aQty=document.getElementById("aQty");
+const aReason=document.getElementById("aReason");
+const stopNotes=document.getElementById("stopNotes");
+
+const STAGES=[
+  ["New Order","new"],["Design","design"],["Awaiting Approval","approval"],["Printing","printing"],["Cutting","cutting"],["Sewing","sewing"],["Quality Control","qc"],["Packaging","packaging"],["Ready","ready"],["Delivered","delivered"]
+];
+const PRODUCTS=["Football Kits","Netball Kits","Tracksuits","Arm Sleeves","Bucket Hats","Soccer T-Shirts","Golf T-Shirts","Other"];
+const MONTH_ABBR=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function ic(name){
+ const paths={
+  grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  receipt:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"/><path d="M9 8h6M9 12h6"/>',
+  layers:'<path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/>',
+  box:'<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>',
+  calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  users:'<circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c1-3.5 3.5-5.5 5.5-5.5s4.5 2 5.5 5.5"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.3c2 .3 3.6 2 4.4 4.7"/>',
+  stack:'<path d="M12 3l8 4.5-8 4.5-8-4.5 8-4.5z"/><path d="M4 12l8 4.5 8-4.5M4 16.5L12 21l8-4.5"/>',
+  gauge:'<path d="M3 12a9 9 0 1118 0"/><path d="M12 12l4-4"/>',
+  alertbox:'<path d="M12 3l9 5v8l-9 5-9-5V8l9-5z"/><path d="M12 8v5"/><circle cx="12" cy="16.3" r=".4" fill="currentColor" stroke="none"/>'
+ };
+ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths[name]||''}</svg>`;
+}
+const TODAY=new Date().toISOString().slice(0,10);
+const DEMO={
+ employees:["Tebo","Neo","Kago","Thato","Lorato","Mpho"],
+ orders:[
+  {id:"o1",num:"JON-2026-0087",client:"Gaborone United",contact:"Team Manager",phone:"+267 71 000 001",product:"Football Kits",qty:35,orderDate:"2026-08-02",due:"2026-08-20",stage:"sewing",priority:"High",value:14000,paid:8000,employee:"Tebo",sizes:{S:5,M:12,L:12,XL:6},notes:"Home and away kit",history:[{ts:Date.now()-9*86400000,note:"Order created by Tebo"},{ts:Date.now()-2*86400000,note:"Stage changed to Sewing by Tebo"}]},
+  {id:"o2",num:"JON-2026-0088",client:"BDF XI",contact:"Procurement",phone:"+267 72 000 002",product:"Tracksuits",qty:28,orderDate:"2026-08-04",due:"2026-08-22",stage:"printing",priority:"Normal",value:11200,paid:5600,employee:"Thato",sizes:{M:10,L:10,XL:8},notes:"Navy tracksuits",history:[{ts:Date.now()-7*86400000,note:"Order created by Thato"}]},
+  {id:"o3",num:"JON-2026-0089",client:"St Joseph's College",contact:"",phone:"",product:"Netball Kits",qty:18,orderDate:"2026-08-06",due:"2026-08-19",stage:"approval",priority:"Urgent",value:7200,paid:3600,employee:"Tebo",sizes:{S:6,M:8,L:4},notes:"Awaiting final sponsor placement",history:[{ts:Date.now()-5*86400000,note:"Order created by Tebo"}]},
+  {id:"o4",num:"JON-2026-0090",client:"ABC Holdings",contact:"Marketing",phone:"+267 73 000 003",product:"Golf T-Shirts",qty:44,orderDate:"2026-08-05",due:"2026-08-25",stage:"qc",priority:"Normal",value:9900,paid:9900,employee:"Neo",sizes:{M:16,L:16,XL:12},notes:"Corporate golf day",history:[{ts:Date.now()-6*86400000,note:"Order created by Neo"}]},
+  {id:"o5",num:"JON-2026-0091",client:"Mochudi Centre Chiefs",contact:"",phone:"",product:"Soccer T-Shirts",qty:60,orderDate:"2026-08-10",due:"2026-08-28",stage:"design",priority:"High",value:12600,paid:6300,employee:"Kago",sizes:{S:10,M:20,L:20,XL:10},notes:"Supporter shirts",history:[{ts:Date.now()-1*86400000,note:"Order created by Kago"}]},
+  {id:"o6",num:"JON-2026-0092",client:"Maun Sports Club",contact:"",phone:"",product:"Bucket Hats",qty:30,orderDate:"2026-08-12",due:"2026-08-30",stage:"new",priority:"Normal",value:3600,paid:1800,employee:"Mpho",sizes:{},notes:"Black / white reversible",history:[{ts:Date.now()-4*3600000,note:"Order created by Mpho"}]},
+  {id:"o7",num:"JON-2026-0083",client:"Police XI",contact:"",phone:"",product:"Football Kits",qty:26,orderDate:"2026-07-28",due:"2026-08-14",stage:"ready",priority:"Normal",value:10400,paid:10400,employee:"Neo",sizes:{M:10,L:10,XL:6},notes:"Ready for collection",history:[{ts:Date.now()-19*86400000,note:"Order created by Neo"}]},
+ ],
+ inventory:[
+  {id:"i1",name:"Birdeye White 150gsm",cat:"Fabrics",qty:82,min:30,unit:"metres",loc:"Office"},
+  {id:"i2",name:"Birdeye Black 150gsm",cat:"Fabrics",qty:24,min:30,unit:"metres",loc:"Office"},
+  {id:"i3",name:"Tracksuit Fabric – Navy",cat:"Fabrics",qty:12,min:25,unit:"metres",loc:"Office"},
+  {id:"i4",name:"Sublimation Paper",cat:"Production Materials",qty:7,min:5,unit:"rolls",loc:"Print Room"},
+  {id:"i5",name:"Black Ribbing",cat:"Trims",qty:19,min:10,unit:"metres",loc:"Office"},
+  {id:"i6",name:"Clear Garment Bags",cat:"Packaging",qty:140,min:75,unit:"units",loc:"Packing Area"},
+ ],
+ logs:[
+  {id:"l1",employee:"Neo",orderId:"o4",task:"Quality Control",start:new Date(Date.now()-6*3600000).toISOString(),end:new Date(Date.now()-5*3600000).toISOString(),notes:"Checked stitching and sponsor logo placement."},
+  {id:"l2",employee:"Tebo",orderId:"o3",task:"Design",start:new Date(Date.now()-7*3600000).toISOString(),end:new Date(Date.now()-5.2*3600000).toISOString(),notes:"Updated sponsor placement and prepared approval visual."},
+ ],
+ timers:[],
+ stockMoves:[]
+};
+let db=null; let selectedEmployee=null; let timerTick=null; let currentPage="dashboard"; let syncTick=null;
+
+function clone(v){return JSON.parse(JSON.stringify(v))}
+
+/* ---------- shared storage — Supabase (works on any host, free tier) ---------- */
+// 1. Create a free project at supabase.com
+// 2. Run the SQL from the setup instructions to create the `ops_state` table
+// 3. Paste your Project URL and anon public key below (Settings → API)
+const SUPABASE_URL = "https://jqdddnwdlqvhhndakkpb.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_il_ipnPCFHm_cI-jgr9U3g_WJVPCiTE";
+const supa = (SUPABASE_URL.startsWith("http") && window.supabase)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
+async function loadDB(){
+  if(!supa) return clone(DEMO);
+  try{
+    const {data,error}=await supa.from('ops_state').select('data').eq('id','main').single();
+    if(error) throw error;
+    if(data&&data.data&&data.data.orders) return data.data;
+  }catch(e){ console.warn('load failed',e); }
+  return clone(DEMO);
+}
+async function saveDB(){
+  if(!supa){ toast('Not connected to Supabase yet'); return; }
+  try{
+    const {error}=await supa.from('ops_state').upsert({id:'main', data:db, updated_at:new Date().toISOString()});
+    if(error) throw error;
+  }catch(e){ console.warn('save failed', e); toast('Could not save — check connection'); }
+}
+function loadSelectedEmployee(){
+  try{ return localStorage.getItem('jonelSelectedEmployee'); }catch(e){ return null; }
+}
+function saveSelectedEmployee(name){
+  try{ localStorage.setItem('jonelSelectedEmployee', name); }catch(e){}
+}
+function mergeIncomingDB(next){
+  db=next;
+  if(!db.employees||!db.employees.length) db.employees=clone(DEMO.employees);
+  if(!db.timers) db.timers=[];
+  if(!db.stockMoves) db.stockMoves=[];
+  if(!db.logs) db.logs=[];
+  if(!db.employees.includes(selectedEmployee)) selectedEmployee=db.employees[0];
+}
+async function syncNow(silent){
+  try{
+    mergeIncomingDB(await loadDB());
+    renderAll();
+    if(!silent) toast(supa?'Synced latest data':'Not connected to Supabase yet');
+  }catch(e){ if(!silent) toast('Sync failed — try again'); }
+}
+function subscribeRealtime(){
+  if(!supa) return;
+  try{
+    supa.channel('ops_state_changes')
+      .on('postgres_changes', {event:'*', schema:'public', table:'ops_state', filter:'id=eq.main'}, payload=>{
+        if(payload.new&&payload.new.data){ mergeIncomingDB(payload.new.data); renderAll(); }
+      })
+      .subscribe();
+  }catch(e){ console.warn('realtime subscribe failed', e); }
+}
+function resetDemo(){if(confirm("Reset all shared data to the original demo? This affects everyone on the team.")){db=clone(DEMO);saveDB();renderAll();toast("Demo data reset")}}
+
+
+function fmtMoney(v){return "P"+Number(v||0).toLocaleString("en-US",{maximumFractionDigits:0})}
+function stageLabel(code){return STAGES.find(x=>x[1]===code)?.[0]||code}
+function stageIndex(code){return STAGES.findIndex(x=>x[1]===code)}
+function progressFor(code){const i=Math.max(0,stageIndex(code));return Math.round((i/(STAGES.length-1))*100)}
+function monthKey(d){return d?d.slice(0,7):''}
+function dayDiff(a,b){return Math.round((new Date(b+"T00:00:00")-new Date(a+"T00:00:00"))/86400000)}
+function minutesBetween(a,b){return Math.max(0,Math.floor((new Date(b)-new Date(a))/60000))}
+function durationText(min){min=Math.max(0,Math.round(min||0));return `${Math.floor(min/60)}h ${String(min%60).padStart(2,"0")}m`}
+function timeText(iso){return new Date(iso).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}
+function dateText(s){return s?new Date(s+"T00:00:00").toLocaleDateString("en-GB",{day:"2-digit",month:"short"}):"—"}
+function isoPlusDays(n){const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)}
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._x);t._x=setTimeout(()=>t.classList.remove("show"),2200)}
+function toggleSidebar(){document.getElementById("sidebar").classList.toggle("open")}
+function employeesList(){return db.employees&&db.employees.length?db.employees:['Unassigned']}
+
+const navItems=[
+ ["dashboard","Dashboard","grid"],["orders","Orders","receipt"],["production","Production","layers"],["inventory","Inventory","box"],["worklog","Work Log","clock"],["timesheets","Timesheets","calendar"],["customers","Customers","users"]
+];
+function initNav(){
+ const n=document.getElementById("nav");n.innerHTML=navItems.map(([k,l,icon])=>`<button data-page="${k}" onclick="showPage('${k}')">${ic(icon)}<span>${l}</span></button>`).join("");
+}
+function showPage(k){
+ currentPage=k;
+ document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+ document.getElementById("page-"+k).classList.add("active");
+ document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===k));
+ const labels={dashboard:["Operations Dashboard","Live view of orders, production, stock and staff."],orders:["Orders","Track every customer order and deadline."],production:["Production","Follow jobs from design to delivery."],inventory:["Inventory","Office stock, fabrics and production materials."],worklog:["Work Log","Employees record exactly what they are working on."],timesheets:["Timesheets","Daily, weekly and monthly employee work hours."],customers:["Customers","Customer order history and value."]};
+ document.getElementById("pageTitle").textContent=labels[k][0];
+ document.getElementById("pageSubtitle").textContent=labels[k][1];
+ document.getElementById("sidebar").classList.remove("open");
+ renderAll();
+}
+function priorityBadge(p){return p==="Urgent"?"danger":p==="High"?"warn":""}
+function statusBadge(stage){return stage==="delivered"||stage==="ready"?"ok":stage==="approval"?"warn":""}
+
+function monthsWindow(){const now=new Date();const arr=[];for(let i=7;i>=0;i--){arr.push(new Date(now.getFullYear(),now.getMonth()-i,1))}return arr}
+
+function renderDashboard(){
+ const thisMonth=TODAY.slice(0,7);
+ document.getElementById("whoAmI").textContent=selectedEmployee||"—";
+ const monthOrders=db.orders.filter(o=>monthKey(o.orderDate||o.due)===thisMonth);
+ const active=db.orders.filter(o=>o.stage!=="delivered");
+ const completed=db.orders.filter(o=>o.stage==="delivered"||o.stage==="ready");
+ const units=monthOrders.reduce((a,o)=>a+o.qty,0);
+ const low=db.inventory.filter(i=>i.qty<=i.min);
+ const open=db.timers.length;
+ const k=[
+  ["receipt","Orders this month",monthOrders.length,new Date().toLocaleDateString('en-GB',{month:'long',year:'numeric'})],
+  ["stack","Units this month",units,"Across this month's orders"],
+  ["gauge","Active production",active.length,`${completed.length} ready/completed`],
+  ["alertbox","Low stock",low.length,open?`${open} employee${open>1?'s':''} clocked in`:"No active timers"]
+ ];
+ document.getElementById("kpis").innerHTML=k.map(x=>`<div class="card kpi"><div class="kpi-icon">${ic(x[0])}</div><div class="label">${x[1]}</div><div class="value">${x[2]}</div><div class="foot">${x[3]}</div></div>`).join("");
+ const months=monthsWindow();
+ const monthly=months.map(d=>{const key=d.toISOString().slice(0,7);return db.orders.filter(o=>monthKey(o.orderDate||o.due)===key).length});
+ const mx=Math.max(...monthly,1);
+ document.getElementById("yearBadge").textContent=new Date().getFullYear();
+ document.getElementById("monthlyBars").innerHTML=monthly.map((v,i)=>`<div class="bar-wrap"><div class="bar-value">${v}</div><div class="bar" style="height:${Math.max(8,160*v/mx)}px"></div><div class="bar-label">${MONTH_ABBR[months[i].getMonth()]}</div></div>`).join("");
+ const grouped={};active.forEach(o=>grouped[o.stage]=(grouped[o.stage]||0)+1);const max=Math.max(...Object.values(grouped),1);
+ document.getElementById("stageMetrics").innerHTML=Object.entries(grouped).sort((a,b)=>stageIndex(a[0])-stageIndex(b[0])).map(([s,v])=>`<div class="metric-line"><strong>${stageLabel(s)}</strong><div class="progress"><span style="width:${v/max*100}%"></span></div><span class="badge">${v}</span></div>`).join("")||'<div class="empty">No active orders</div>';
+ const soon=[...active].sort((a,b)=>a.due.localeCompare(b.due)).slice(0,5);
+ document.getElementById("dueSoon").innerHTML=soon.map(o=>{const d=dayDiff(TODAY,o.due),cl=d<0?"danger":d<=3?"warn":"ok";return `<div class="list-row"><div><strong style="font-size:12px">${o.client}</strong><div class="sub">${o.product} · ${o.num}</div></div><div style="text-align:right"><span class="badge ${cl}">${d<0?Math.abs(d)+"d overdue":d===0?"Due today":d+"d"}</span><div class="sub">${dateText(o.due)}</div></div></div>`}).join("")||'<div class="empty">No open orders.</div>';
+ renderWorkingNow();
+}
+function renderWorkingNow(){
+ const host=document.getElementById("workingNow");if(!host)return;
+ if(!db.timers.length){host.innerHTML='<div class="empty">No employees are currently clocked in.</div>';return}
+ host.innerHTML=db.timers.map(t=>{const o=db.orders.find(x=>x.id===t.orderId);return `<div class="list-row"><div><strong style="font-size:12px">${t.employee}</strong><div class="sub">${o?.client||"General"} · ${t.task}</div></div><span class="badge ok">Working now</span></div>`}).join("");
+}
+
+function renderOrders(){
+ const q=(document.getElementById("orderSearch")?.value||"").toLowerCase(),f=document.getElementById("orderStatusFilter")?.value||"";
+ const arr=db.orders.filter(o=>(!f||o.stage===f)&&(!q||[o.client,o.num,o.product].some(x=>x.toLowerCase().includes(q))));
+ document.getElementById("ordersBody").innerHTML=arr.map(o=>{
+  const d=dayDiff(TODAY,o.due),deadline=o.stage!=="delivered"&&d<0?`<span class="badge danger">${Math.abs(d)}d overdue</span>`:dateText(o.due);
+  return `<tr><td><strong style="cursor:pointer" onclick="viewOrder('${o.id}')">${o.num}</strong><div class="sub"><span class="badge ${priorityBadge(o.priority)}">${o.priority}</span></div></td><td>${o.client}</td><td>${o.product}</td><td><strong>${o.qty}</strong></td><td>${deadline}</td><td><span class="badge ${statusBadge(o.stage)}">${stageLabel(o.stage)}</span></td><td style="min-width:120px"><div class="progress"><span style="width:${progressFor(o.stage)}%"></span></div><div class="sub">${progressFor(o.stage)}%</div></td><td>${fmtMoney(o.value)}<div class="sub">Bal ${fmtMoney(o.value-o.paid)}</div></td><td><button class="tiny" onclick="viewOrder('${o.id}')">View</button></td></tr>`
+ }).join("")||'<tr><td colspan="9" class="empty">No matching orders.</td></tr>';
+}
+
+function renderBoard(){
+ const visibleStages=STAGES.filter(s=>!["delivered"].includes(s[1]));
+ document.getElementById("productionBoard").innerHTML=visibleStages.map(([label,code])=>{
+  const arr=db.orders.filter(o=>o.stage===code);
+  return `<div class="column"><h4>${label}<span class="column-count">${arr.length}</span></h4>${arr.map(o=>`<div class="order-card"><div class="client" style="cursor:pointer" onclick="viewOrder('${o.id}')">${o.client}</div><div class="meta">${o.product} · ${o.qty} units<br/>Due ${dateText(o.due)} · ${o.employee||'—'}</div><span class="badge ${priorityBadge(o.priority)}">${o.priority}</span><div class="card-actions" style="margin-top:9px">${stageIndex(code)>0?`<button class="tiny" onclick="moveOrder('${o.id}',-1)">←</button>`:""}<button class="tiny" onclick="moveOrder('${o.id}',1)">Next →</button></div></div>`).join("")||'<div class="empty">No orders</div>'}</div>`;
+ }).join("");
+}
+function moveOrder(id,dir){
+ const o=db.orders.find(x=>x.id===id);if(!o)return;let idx=stageIndex(o.stage)+dir;idx=Math.max(0,Math.min(STAGES.length-1,idx));const newStage=STAGES[idx][1];o.stage=newStage;o.history=o.history||[];o.history.push({ts:Date.now(),note:`Stage changed to ${stageLabel(newStage)} by ${selectedEmployee}`});saveDB();renderAll();toast(`${o.num} moved to ${stageLabel(o.stage)}`)
+}
+
+/* ---------- order detail / timeline ---------- */
+function viewOrder(id){
+ const o=db.orders.find(x=>x.id===id);if(!o)return;
+ window._viewingOrderId=id;
+ document.getElementById('vNum').textContent=`${o.num} — ${o.client}`;
+ const balance=(o.value||0)-(o.paid||0);
+ const sizesText=Object.entries(o.sizes||{}).filter(([k,v])=>v>0).map(([k,v])=>`${k}:${v}`).join(', ')||'—';
+ document.getElementById('viewOrderBody').innerHTML=`
+  <div class="detail-grid">
+    <div class="detail-field"><div class="k">Client Contact</div><div class="v">${o.contact||'—'}${o.phone?' · '+o.phone:''}</div></div>
+    <div class="detail-field"><div class="k">Order / Due Date</div><div class="v">${dateText(o.orderDate)} → ${dateText(o.due)}</div></div>
+    <div class="detail-field"><div class="k">Product</div><div class="v">${o.product} × ${o.qty}</div></div>
+    <div class="detail-field"><div class="k">Sizes</div><div class="v">${sizesText}</div></div>
+    <div class="detail-field"><div class="k">Assigned</div><div class="v">${o.employee||'—'}</div></div>
+    <div class="detail-field"><div class="k">Value / Paid</div><div class="v">${fmtMoney(o.value)} / ${fmtMoney(o.paid)}</div></div>
+    <div class="detail-field"><div class="k">Balance</div><div class="v">${fmtMoney(balance)}</div></div>
+  </div>
+  ${o.notes?`<div class="detail-field" style="margin-bottom:14px"><div class="k">Notes</div><div class="v">${o.notes}</div></div>`:''}
+  <div class="stage-select-row">
+    <div class="field"><label>Stage</label><select id="vStage" onchange="setOrderStage('${o.id}', this.value)">${STAGES.map(s=>`<option value="${s[1]}" ${o.stage===s[1]?'selected':''}>${s[0]}</option>`).join('')}</select></div>
+    <div class="field"><label>Priority</label><select id="vPriority" onchange="setOrderPriority('${o.id}', this.value)">${["Normal","High","Urgent","Low"].map(p=>`<option ${o.priority===p?'selected':''}>${p}</option>`).join('')}</select></div>
+  </div>
+  <div><div class="timeline-head">Timeline</div>
+  ${(o.history||[]).slice().reverse().map(h=>`<div class="timeline-item"><span class="timeline-ts">${new Date(h.ts).toLocaleString()}</span><span>${h.note}</span></div>`).join('')||'<div class="empty">No history yet.</div>'}
+  </div>`;
+ document.getElementById('viewOrderModal').classList.add('open');
+}
+function setOrderStage(id,stageCode){
+ const o=db.orders.find(x=>x.id===id);if(!o)return;
+ o.stage=stageCode;o.history=o.history||[];o.history.push({ts:Date.now(),note:`Stage changed to ${stageLabel(stageCode)} by ${selectedEmployee}`});
+ saveDB();renderAll();viewOrder(id);
+}
+function setOrderPriority(id,priority){
+ const o=db.orders.find(x=>x.id===id);if(!o)return;
+ o.priority=priority;saveDB();renderAll();
+}
+function deleteOrderConfirm(){
+ const id=window._viewingOrderId;if(!id)return;
+ if(!confirm('Delete this order? This cannot be undone.'))return;
+ db.orders=db.orders.filter(o=>o.id!==id);saveDB();closeModal('viewOrderModal');renderAll();toast('Order deleted');
+}
+
+function renderInventory(){
+ const q=(document.getElementById("inventorySearch")?.value||"").toLowerCase();
+ const arr=db.inventory.filter(i=>!q||[i.name,i.cat,i.loc].some(x=>x.toLowerCase().includes(q)));
+ document.getElementById("inventoryGrid").innerHTML=arr.map(i=>{const low=i.qty<=i.min;return `<div class="card stock-card"><div class="stock-top"><div><div class="stock-name">${i.name}</div><div class="sub">${i.cat} · ${i.loc}</div></div><span class="badge ${low?"danger":"ok"}">${low?"Low stock":"Good"}</span></div><div class="stock-qty">${i.qty.toLocaleString()}</div><div class="stock-unit">${i.unit} on hand · minimum ${i.min}</div><button class="btn" style="margin-top:14px;width:100%" onclick="openAdjustment('${i.id}')">Record Stock Movement</button></div>`}).join("")||'<div class="empty">No stock items yet — add your first one above.</div>';
+}
+function openInventoryModal(){document.getElementById("inventoryModal").classList.add("open")}
+function saveInventory(e){e.preventDefault();db.inventory.push({id:"i"+Date.now(),name:iName.value,cat:iCategory.value,qty:Number(iQty.value),min:Number(iMin.value),unit:iUnit.value,loc:iLocation.value||"Office"});saveDB();closeModal("inventoryModal");e.target.reset();iLocation.value="Office";renderAll();toast("Inventory item added")}
+function openAdjustment(id){aItemId.value=id;aQty.value="";aReason.value="";document.getElementById("adjustModal").classList.add("open")}
+function saveAdjustment(e){e.preventDefault();const item=db.inventory.find(x=>x.id===aItemId.value),qty=Number(aQty.value);if(!item)return;if(aType.value==="out"&&qty>item.qty){alert("Cannot issue more stock than is currently on hand.");return}item.qty=+(item.qty+(aType.value==="in"?qty:-qty)).toFixed(3);db.stockMoves.push({id:"m"+Date.now(),itemId:item.id,type:aType.value,qty,reason:aReason.value,at:new Date().toISOString()});saveDB();closeModal("adjustModal");renderAll();toast("Stock movement recorded")}
+
+function orderOptions(){return db.orders.filter(o=>o.stage!=="delivered").map(o=>`<option value="${o.id}">${o.num} · ${o.client} · ${o.product}</option>`).join("")}
+function renderEmployeeStrip(){
+ const strip=document.getElementById("employeeStrip");
+ strip.innerHTML=employeesList().map(e=>`<button class="employee-chip ${e===selectedEmployee?"active":""}" onclick="selectEmployee('${e.replace(/'/g,"\\'")}')">${e}</button>`).join("")+`<button class="employee-chip" onclick="addEmployeePrompt()">+ Add</button>`;
+}
+function renderWorkLog(){
+ renderEmployeeStrip();
+ timerOrder.innerHTML=orderOptions();if(!timerOrder.value&&db.orders.length)timerOrder.value=db.orders.find(o=>o.stage!=="delivered")?.id||"";
+ syncTimerTask();
+ timerEmployeeLabel.textContent=`Employee: ${selectedEmployee}`;
+ renderTimerState();renderTodayLogs();
+}
+function selectEmployee(e){selectedEmployee=e;saveSelectedEmployee(e);renderWorkLog();renderTimesheets();renderDashboard()}
+function addEmployeePrompt(){
+ const name=prompt('Add team member name:');if(!name)return;const trimmed=name.trim();if(!trimmed)return;
+ if(!db.employees.includes(trimmed)){db.employees.push(trimmed);saveDB();}
+ selectEmployee(trimmed);
+}
+function syncTimerTask(){
+ const o=db.orders.find(x=>x.id===timerOrder.value);const options=["Design","Client Approval","Print Preparation","Printing / Sublimation","Cutting","Sewing","Quality Control","Packaging","Delivery Preparation"];
+ timerTask.innerHTML=options.map(t=>`<option>${t}</option>`).join("");
+ if(o){const guess={"design":"Design","approval":"Client Approval","printing":"Printing / Sublimation","cutting":"Cutting","sewing":"Sewing","qc":"Quality Control","packaging":"Packaging","ready":"Delivery Preparation"}[o.stage];if(guess)timerTask.value=guess}
+}
+function activeTimer(){return db.timers.find(t=>t.employee===selectedEmployee)}
+function startTimer(){
+ if(activeTimer()){toast("This employee already has an open timer");return}
+ if(!timerOrder.value){toast("Choose an order first");return}
+ const t={id:"t"+Date.now(),employee:selectedEmployee,orderId:timerOrder.value,task:timerTask.value,start:new Date().toISOString()};db.timers.push(t);saveDB();renderAll();toast("Work timer started")
+}
+function stopTimer(){if(!activeTimer())return;stopNotes.value="";document.getElementById("stopModal").classList.add("open")}
+function confirmStopTimer(e){
+ e.preventDefault();const t=activeTimer();if(!t)return;const end=new Date().toISOString();db.logs.push({id:"l"+Date.now(),employee:t.employee,orderId:t.orderId,task:t.task,start:t.start,end,notes:stopNotes.value});db.timers=db.timers.filter(x=>x.id!==t.id);saveDB();closeModal("stopModal");renderAll();toast("Work log saved")
+}
+function renderTimerState(){
+ const t=activeTimer(),o=t?db.orders.find(x=>x.id===t.orderId):null;
+ startBtn.disabled=!!t;stopBtn.disabled=!t;timerOrder.disabled=!!t;timerTask.disabled=!!t;
+ timerStatus.textContent=t?"Work session in progress":"Not currently clocked in";
+ timerProjectLabel.textContent=t?`${o?.client||"Order"} · ${t.task}`:"Choose an order and task, then start work.";
+ if(timerTick)clearInterval(timerTick);
+ const update=()=>{if(!t){timerDisplay.textContent="00:00:00";return}const sec=Math.max(0,Math.floor((Date.now()-new Date(t.start).getTime())/1000));const h=String(Math.floor(sec/3600)).padStart(2,"0"),m=String(Math.floor(sec%3600/60)).padStart(2,"0"),s=String(sec%60).padStart(2,"0");timerDisplay.textContent=`${h}:${m}:${s}`};
+ update();if(t)timerTick=setInterval(update,1000);
+}
+function renderTodayLogs(){
+ const arr=db.logs.filter(l=>l.employee===selectedEmployee&&l.start.slice(0,10)===TODAY);let mins=0;arr.forEach(l=>mins+=minutesBetween(l.start,l.end));todayHoursBadge.textContent=durationText(mins);
+ todayLogs.innerHTML=arr.slice().reverse().map(l=>{const o=db.orders.find(x=>x.id===l.orderId);return `<div class="list-row"><div><strong style="font-size:12px">${o?.client||"General"}</strong><div class="sub">${l.task} · ${timeText(l.start)}–${timeText(l.end)}</div></div><span class="badge">${durationText(minutesBetween(l.start,l.end))}</span></div>`}).join("")||'<div class="empty">No completed work logs today.</div>';
+}
+
+function renderTimesheets(){
+ const sel=document.getElementById("timesheetEmployee");
+ sel.innerHTML='<option value="">All employees</option>'+employeesList().map(e=>`<option ${e===sel?.value?'selected':''}>${e}</option>`).join("");
+ const emp=sel?.value||"";const arr=db.logs.filter(l=>!emp||l.employee===emp).slice().sort((a,b)=>b.start.localeCompare(a.start));const mins=arr.reduce((a,l)=>a+minutesBetween(l.start,l.end),0);const today=arr.filter(l=>l.start.slice(0,10)===TODAY).reduce((a,l)=>a+minutesBetween(l.start,l.end),0);
+ const unique=new Set(arr.map(l=>l.orderId)).size;
+ timeKpis.innerHTML=[["clock","Total hours",durationText(mins)],["calendar","Today",durationText(today)],["receipt","Work sessions",arr.length],["layers","Projects",unique]].map(x=>`<div class="card kpi"><div class="kpi-icon">${ic(x[0])}</div><div class="label">${x[1]}</div><div class="value" style="font-size:22px">${x[2]}</div></div>`).join("");
+ timesheetBody.innerHTML=arr.map(l=>{const o=db.orders.find(x=>x.id===l.orderId);return `<tr><td>${dateText(l.start.slice(0,10))}</td><td><strong>${l.employee}</strong></td><td>${o?.client||"-"}<div class="sub">${o?.num||""}</div></td><td>${l.task}</td><td>${timeText(l.start)}</td><td>${timeText(l.end)}</td><td><strong>${durationText(minutesBetween(l.start,l.end))}</strong></td><td style="max-width:280px">${l.notes||""}</td></tr>`}).join("")||'<tr><td colspan="8" class="empty">No work logs yet.</td></tr>';
+}
+
+function renderCustomers(){
+ const q=(customerSearch?.value||"").toLowerCase();const map={};
+ db.orders.forEach(o=>{
+  if(!map[o.client])map[o.client]={name:o.client,orders:0,units:0,value:0,last:'',contact:'',phone:''};
+  const c=map[o.client];c.orders++;c.units+=o.qty;c.value+=o.value;
+  if(!c.last||o.due>c.last)c.last=o.due;
+  if(o.contact)c.contact=o.contact;
+  if(o.phone)c.phone=o.phone;
+ });
+ const arr=Object.values(map).filter(c=>!q||c.name.toLowerCase().includes(q));
+ customersBody.innerHTML=arr.map(c=>`<tr><td><strong>${c.name}</strong></td><td>${c.contact||"—"}</td><td>${c.phone||"—"}</td><td>${c.orders}</td><td>${c.units}</td><td>${fmtMoney(c.value)}</td><td>${dateText(c.last)}</td></tr>`).join("")||'<tr><td colspan="7" class="empty">No customers yet.</td></tr>';
+}
+
+function openOrderModal(){
+ fProduct.innerHTML=PRODUCTS.map(p=>`<option>${p}</option>`).join("");fEmployee.innerHTML=employeesList().map(e=>`<option>${e}</option>`).join("");
+ fOrderDate.value=TODAY;fDue.value=isoPlusDays(14);document.getElementById("orderModal").classList.add("open")
+}
+function closeModal(id){document.getElementById(id).classList.remove("open")}
+function saveOrder(e){
+ e.preventDefault();const n=80+db.orders.length+1;const totalSizes=["XS","S","M","L","XL","2XL"].reduce((a,s)=>a+Number(document.getElementById("size"+s).value||0),0);const qty=Number(fQty.value);
+ if(totalSizes>0&&totalSizes!==qty){if(!confirm(`Size quantities total ${totalSizes}, but order quantity is ${qty}. Save anyway?`))return}
+ const order={id:"o"+Date.now(),num:`JON-2026-${String(n).padStart(4,"0")}`,client:fClient.value.trim(),contact:fContact.value.trim(),phone:fPhone.value.trim(),product:fProduct.value,qty,orderDate:fOrderDate.value||TODAY,due:fDue.value,stage:"new",priority:fPriority.value,value:Number(fValue.value||0),paid:Number(fPaid.value||0),employee:fEmployee.value,sizes:{XS:+sizeXS.value,S:+sizeS.value,M:+sizeM.value,L:+sizeL.value,XL:+sizeXL.value,"2XL":+size2XL.value},notes:fNotes.value,history:[{ts:Date.now(),note:`Order created by ${selectedEmployee}`}]};
+ db.orders.push(order);
+ saveDB();closeModal("orderModal");e.target.reset();renderAll();showPage("orders");toast("New order created: "+order.num)
+}
+function fillFilters(){
+ const s=document.getElementById("orderStatusFilter");if(s&&s.options.length===1)s.innerHTML='<option value="">All statuses</option>'+STAGES.map(x=>`<option value="${x[1]}">${x[0]}</option>`).join("");
+}
+function renderAll(){fillFilters();renderDashboard();renderOrders();renderBoard();renderInventory();renderWorkLog();renderTimesheets();renderCustomers()}
+
+window.addEventListener("error",(event)=>{
+  console.error(event.error||event.message);
+  const t=document.getElementById("toast");
+  if(t){t.textContent="Something failed to load. Tap ⟳ Sync or refresh the page.";t.classList.add("show");}
+});
+
+async function boot(){
+ db=await loadDB();
+ if(!db.employees||!db.employees.length) db.employees=clone(DEMO.employees);
+ if(!db.timers) db.timers=[];
+ if(!db.stockMoves) db.stockMoves=[];
+ if(!db.logs) db.logs=[];
+ const saved=loadSelectedEmployee();
+ selectedEmployee=(saved&&db.employees.includes(saved))?saved:db.employees[0];
+ initNav();
+ showPage("dashboard");
+ if(supa){ subscribeRealtime(); syncTick=setInterval(()=>syncNow(true),60000); }
+ else{ toast("Not connected to Supabase — add your project keys near the top of the script"); }
+}
+boot();
+</script>
+</body>
+</html>
