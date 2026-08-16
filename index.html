@@ -57,14 +57,14 @@ button{cursor:pointer}
 .timer-shell{max-width:650px}.timer-card{padding:24px;text-align:center}.timer{font-variant-numeric:tabular-nums;font-size:52px;font-weight:950;letter-spacing:-.03em;margin:22px 0}.timer-title{font-weight:850}.timer-sub{font-size:12px;color:var(--muted);margin-top:6px}.timer-controls{display:flex;gap:10px;justify-content:center}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.field label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:800;margin-bottom:6px}.field input,.field select,.field textarea{width:100%;border:1px solid #dcdcdc;background:#fff;border-radius:10px;padding:10px}.field textarea{min-height:80px;resize:vertical}
 .employee-strip{display:flex;gap:10px;overflow:auto;padding-bottom:4px}.employee-chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 12px;font-size:11px;font-weight:750}.employee-chip.active{background:#111;color:#fff;border-color:#111}
 .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:none;align-items:center;justify-content:center;padding:18px}.modal-backdrop.open{display:flex}.modal{background:#fff;border-radius:20px;width:min(760px,100%);max-height:90vh;overflow:auto;padding:22px;box-shadow:0 30px 90px rgba(0,0,0,.3)}.modal h2{margin:0 0 18px}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
-.mobile-menu{display:none;border:0;background:#111;color:#fff;width:40px;height:40px;border-radius:10px}
+.mobile-menu{display:none;border:0;background:#111;color:#fff;width:44px;height:44px;border-radius:10px;font-size:22px;line-height:1;align-items:center;justify-content:center}
 .empty{color:var(--muted);font-size:12px;padding:20px;text-align:center}
 .note{font-size:11px;color:var(--muted);line-height:1.5}
 .metric-line{display:flex;align-items:center;gap:12px;margin:10px 0}.metric-line strong{min-width:95px;font-size:11px}.metric-line .progress{flex:1}
 .toast{position:fixed;right:22px;bottom:22px;background:var(--dark);color:#fff;padding:12px 16px;border-radius:12px;font-size:12px;font-weight:600;z-index:200;opacity:0;transform:translateY(12px);pointer-events:none;transition:.25s;box-shadow:0 10px 30px rgba(16,44,64,.35)}.toast.show{opacity:1;transform:translateY(0)}
 @media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.inventory-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:760px){
-  .app{display:block}.sidebar{position:fixed;left:-270px;z-index:90;width:250px;transition:.25s}.sidebar.open{left:0}.main{width:100%}.mobile-menu{display:block}
+  .app{display:block}.sidebar{position:fixed;left:-270px;z-index:90;width:250px;transition:.25s}.sidebar.open{left:0}.main{width:100%}.mobile-menu{display:flex}
   .topbar{padding:0 15px;height:70px}.topbar h1{font-size:17px}.content{padding:16px 14px 85px}.kpis{grid-template-columns:repeat(2,1fr);gap:9px}.kpi{padding:14px}.kpi .value{font-size:24px}
   .inventory-grid{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.grid2{gap:11px}.timer{font-size:42px}.actions .desktop-only{display:none}.board{grid-template-columns:repeat(6,220px)}
 }
@@ -321,7 +321,8 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
       <section class="page" id="page-pricelist">
         <div class="page-title-block"><h2>Price List</h2><p>Standard prices for everything Jonel Sportif sells.</p></div>
         <div class="note" id="priceListNote" style="margin-bottom:14px"></div>
-        <div class="card table-card"><table class="table"><thead><tr><th>Product</th><th>Price per unit</th><th>Notes</th></tr></thead><tbody id="priceListBody"></tbody></table></div>
+        <div class="toolbar" id="priceListToolbar" style="display:none"><div><strong>Add a new line item</strong><div class="sub">Products, add-ons, services — anything you price.</div></div><button class="btn primary" onclick="addPriceListItemPrompt()">+ Add Item</button></div>
+        <div class="card table-card"><table class="table"><thead><tr><th>Product</th><th>Price per unit</th><th>Notes</th><th></th></tr></thead><tbody id="priceListBody"></tbody></table></div>
       </section>
     </div>
   </main>
@@ -1072,6 +1073,8 @@ function renderPriceList(){
  const el=document.getElementById("priceListBody");if(!el)return;
  ensurePriceList();
  const admin=isAdmin();
+ const toolbar=document.getElementById("priceListToolbar");
+ if(toolbar) toolbar.style.display=admin?"":"none";
  document.getElementById("priceListNote").textContent=admin
   ?"Prices apply per unit. Edit any field below — changes save automatically and everyone sees them next sync."
   :"Prices apply per unit. Contact an admin to update pricing.";
@@ -1081,10 +1084,29 @@ function renderPriceList(){
     <td><strong>${item.product}</strong></td>
     <td><input type="number" min="0" step="0.01" value="${item.price}" style="width:110px" onchange="updatePriceListItem('${item.product.replace(/'/g,"\\'")}','price',this.value)"/></td>
     <td><input type="text" value="${(item.notes||"").replace(/"/g,'&quot;')}" style="width:100%" placeholder="e.g. sizes 2XL+ add P10, bulk discount over 50" onchange="updatePriceListItem('${item.product.replace(/'/g,"\\'")}','notes',this.value)"/></td>
+    <td><button class="tiny" style="color:var(--danger);border-color:rgba(255,107,118,.4)" onclick="deletePriceListItem('${item.product.replace(/'/g,"\\'")}')">Remove</button></td>
    </tr>`;
   }
-  return `<tr><td><strong>${item.product}</strong></td><td>${fmtMoney(item.price)}</td><td>${item.notes||"—"}</td></tr>`;
- }).join("")||'<tr><td colspan="3" class="empty">No products yet.</td></tr>';
+  return `<tr><td><strong>${item.product}</strong></td><td>${fmtMoney(item.price)}</td><td>${item.notes||"—"}</td><td></td></tr>`;
+ }).join("")||'<tr><td colspan="4" class="empty">No products yet.</td></tr>';
+}
+function addPriceListItemPrompt(){
+ if(!isAdmin()){toast("Only an admin can edit the price list");return}
+ const name=prompt("New item name (e.g. Printing Only, Rush Order Fee, Corporate Golf Shirt):");
+ if(!name)return;
+ const trimmed=name.trim();if(!trimmed)return;
+ if(db.priceList.find(x=>x.product.toLowerCase()===trimmed.toLowerCase())){toast("That item is already on the list");return}
+ const priceStr=prompt(`Price per unit for "${trimmed}" (P):`,"0");
+ if(priceStr===null)return;
+ const price=Number(priceStr)||0;
+ db.priceList.push({product:trimmed,price,notes:""});
+ saveDB();renderAll();toast(`Added "${trimmed}" to the price list`);
+}
+function deletePriceListItem(product){
+ if(!isAdmin()){toast("Only an admin can edit the price list");return}
+ if(!confirm(`Remove "${product}" from the price list?`))return;
+ db.priceList=db.priceList.filter(x=>x.product!==product);
+ saveDB();renderAll();toast("Item removed");
 }
 async function updatePriceListItem(product,field,value){
  if(!isAdmin()){toast("Only an admin can edit the price list");renderPriceList();return}
