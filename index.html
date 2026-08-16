@@ -188,6 +188,21 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
 </style>
 </head>
 <body>
+<div class="modal-backdrop open" id="loginGate" style="z-index:500">
+  <div class="modal" style="max-width:380px;text-align:center">
+    <div class="brand" style="justify-content:center;margin-bottom:18px">
+      <div class="brand-badge">JO</div>
+      <div class="brand-copy" style="text-align:left"><strong>JONEL Operations</strong><small>Sportswear Management</small></div>
+    </div>
+    <form id="loginForm" onsubmit="doLogin(event)" style="text-align:left">
+      <div class="field"><label>Email</label><input id="loginEmail" type="email" required placeholder="you@jonelsportif.com" autocomplete="username"/></div>
+      <div class="field" style="margin-top:12px"><label>Password</label><input id="loginPassword" type="password" required placeholder="••••••••" autocomplete="current-password"/></div>
+      <div id="loginError" style="color:var(--danger);font-size:12px;margin-top:10px;display:none"></div>
+      <button class="btn primary" type="submit" style="width:100%;margin-top:16px" id="loginBtn">Log In</button>
+    </form>
+    <div class="sub" style="margin-top:16px">Accounts are created by your admin — contact them if you need access.</div>
+  </div>
+</div>
 <div class="app">
   <aside class="sidebar" id="sidebar">
     <div class="brand"><div class="brand-badge">JO</div><div class="brand-copy"><strong>JONEL Operations</strong><small>Sportswear Management</small></div></div>
@@ -202,9 +217,10 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
         <div><h1 id="pageTitle">Gaborone Head Office</h1><div class="sub" id="pageSubtitle">Operations period: August 2026</div></div>
       </div>
       <div class="actions">
-        <div class="desktop-only" style="text-align:right;margin-right:8px"><strong style="font-size:11px;display:block" id="whoAmI">Operations Admin</strong><span class="sub">JONEL Sportif</span></div>
+        <div class="desktop-only" style="text-align:right;margin-right:8px"><strong style="font-size:11px;display:block" id="whoAmI">Operations Admin</strong><span class="sub" id="loggedInEmail">JONEL Sportif</span></div>
         <button class="btn" onclick="syncNow()">⟳ Sync</button>
         <button class="btn desktop-only" onclick="resetDemo()">Reset demo</button>
+        <button class="btn desktop-only" onclick="doLogout()">Log out</button>
         <button class="btn primary" onclick="openOrderModal()">+ New Order</button>
       </div>
     </header>
@@ -737,10 +753,25 @@ function openOrderModal(){
  fOrderDate.value=TODAY;fDue.value=isoPlusDays(14);document.getElementById("orderModal").classList.add("open")
 }
 function closeModal(id){document.getElementById(id).classList.remove("open")}
-function saveOrder(e){
- e.preventDefault();const n=80+db.orders.length+1;const totalSizes=["XS","S","M","L","XL","2XL"].reduce((a,s)=>a+Number(document.getElementById("size"+s).value||0),0);const qty=Number(fQty.value);
+function nextOrderNumber(){
+ const year=new Date().getFullYear();
+ let maxN=82;
+ db.orders.forEach(o=>{
+  const m=o.num&&o.num.match(/(\d+)$/);
+  if(m){const num=parseInt(m[1],10);if(num>maxN)maxN=num;}
+ });
+ let candidate=maxN+1;
+ let num=`JON-${year}-${String(candidate).padStart(4,"0")}`;
+ while(db.orders.some(o=>o.num===num)){candidate++;num=`JON-${year}-${String(candidate).padStart(4,"0")}`;}
+ return num;
+}
+async function saveOrder(e){
+ e.preventDefault();
+ const totalSizes=["XS","S","M","L","XL","2XL"].reduce((a,s)=>a+Number(document.getElementById("size"+s).value||0),0);const qty=Number(fQty.value);
  if(totalSizes>0&&totalSizes!==qty){if(!confirm(`Size quantities total ${totalSizes}, but order quantity is ${qty}. Save anyway?`))return}
- const order={id:"o"+Date.now(),num:`JON-2026-${String(n).padStart(4,"0")}`,client:fClient.value.trim(),contact:fContact.value.trim(),phone:fPhone.value.trim(),product:fProduct.value,qty,orderDate:fOrderDate.value||TODAY,due:fDue.value,stage:"new",priority:fPriority.value,value:Number(fValue.value||0),paid:Number(fPaid.value||0),employee:fEmployee.value,sizes:{XS:+sizeXS.value,S:+sizeS.value,M:+sizeM.value,L:+sizeL.value,XL:+sizeXL.value,"2XL":+size2XL.value},notes:fNotes.value,history:[{ts:Date.now(),note:`Order created by ${selectedEmployee}`}]};
+ // pull the latest orders first so the number can't collide with one someone else just created
+ try{ const fresh=await loadDB(); if(fresh&&fresh.orders) db.orders=fresh.orders; }catch(err){}
+ const order={id:"o"+Date.now(),num:nextOrderNumber(),client:fClient.value.trim(),contact:fContact.value.trim(),phone:fPhone.value.trim(),product:fProduct.value,qty,orderDate:fOrderDate.value||TODAY,due:fDue.value,stage:"new",priority:fPriority.value,value:Number(fValue.value||0),paid:Number(fPaid.value||0),employee:fEmployee.value,sizes:{XS:+sizeXS.value,S:+sizeS.value,M:+sizeM.value,L:+sizeL.value,XL:+sizeXL.value,"2XL":+size2XL.value},notes:fNotes.value,history:[{ts:Date.now(),note:`Order created by ${selectedEmployee}`}]};
  db.orders.push(order);
  saveDB();closeModal("orderModal");e.target.reset();renderAll();showPage("orders");toast("New order created: "+order.num)
 }
@@ -755,7 +786,38 @@ window.addEventListener("error",(event)=>{
   if(t){t.textContent="Something failed to load. Tap ⟳ Sync or refresh the page.";t.classList.add("show");}
 });
 
-async function boot(){
+let appStarted=false;
+
+function showLoginGate(){ document.getElementById("loginGate").classList.add("open"); }
+function hideLoginGate(){ document.getElementById("loginGate").classList.remove("open"); }
+
+async function doLogin(e){
+ e.preventDefault();
+ const email=document.getElementById("loginEmail").value.trim();
+ const password=document.getElementById("loginPassword").value;
+ const errEl=document.getElementById("loginError");
+ const btn=document.getElementById("loginBtn");
+ errEl.style.display="none";
+ btn.disabled=true;btn.textContent="Logging in...";
+ try{
+  const {error}=await supa.auth.signInWithPassword({email,password});
+  if(error) throw error;
+  // onAuthStateChange handles hiding the gate and starting the app
+ }catch(err){
+  errEl.textContent=err.message||"Login failed — check your email and password.";
+  errEl.style.display="block";
+ }
+ btn.disabled=false;btn.textContent="Log In";
+}
+async function doLogout(){
+ if(!confirm("Log out?"))return;
+ if(syncTick)clearInterval(syncTick);
+ try{ await supa.auth.signOut(); }catch(e){}
+}
+
+async function startApp(session){
+ appStarted=true;
+ document.getElementById("loggedInEmail").textContent=session&&session.user?session.user.email:"JONEL Sportif";
  db=await loadDB();
  if(!db.employees||!db.employees.length) db.employees=clone(DEMO.employees);
  if(!db.timers) db.timers=[];
@@ -765,8 +827,33 @@ async function boot(){
  selectedEmployee=(saved&&db.employees.includes(saved))?saved:db.employees[0];
  initNav();
  showPage("dashboard");
- if(supa){ subscribeRealtime(); syncTick=setInterval(()=>syncNow(true),60000); }
- else{ toast("Not connected to Supabase — add your project keys near the top of the script"); }
+ subscribeRealtime();
+ syncTick=setInterval(()=>syncNow(true),60000);
+}
+
+async function boot(){
+ if(!supa){
+  toast("Not connected to Supabase — add your project keys near the top of the script");
+  hideLoginGate();
+  await startApp(null);
+  return;
+ }
+ const {data:{session}}=await supa.auth.getSession();
+ if(session){ hideLoginGate(); await startApp(session); }
+ else{ showLoginGate(); }
+
+ supa.auth.onAuthStateChange(async (event,session)=>{
+  if(event==="SIGNED_IN"&&session){
+   hideLoginGate();
+   document.getElementById("loginForm").reset();
+   if(!appStarted) await startApp(session);
+  }
+  if(event==="SIGNED_OUT"){
+   appStarted=false;
+   if(syncTick)clearInterval(syncTick);
+   showLoginGate();
+  }
+ });
 }
 boot();
 </script>
