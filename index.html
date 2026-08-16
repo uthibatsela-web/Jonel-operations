@@ -237,7 +237,9 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
       </div>
       <div class="actions">
         <div class="desktop-only" style="text-align:right;margin-right:8px"><strong style="font-size:11px;display:block" id="whoAmI">Operations Admin</strong><span class="sub" id="loggedInEmail">Jonel Sportif</span> <span class="badge dark" id="roleBadge" style="display:none;margin-left:4px">Admin</span></div>
+        <button class="btn" onclick="openGlobalSearch()" aria-label="Search">🔍</button>
         <button class="btn" onclick="syncNow()">⟳ Sync</button>
+        <button class="btn desktop-only" id="backupBtn" onclick="exportFullBackupJSON()" style="display:none">⬇ Backup</button>
         <button class="btn desktop-only" id="resetDemoBtn" onclick="clearAllData()" style="display:none">Clear all data</button>
         <button class="btn desktop-only" onclick="doLogout()">Log out</button>
         <button class="btn primary" onclick="openOrderModal()">+ New Order</button>
@@ -327,7 +329,7 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
         <div class="field"><label>Client</label><input id="fClient" required placeholder="e.g. Gaborone United"/></div>
         <div class="field"><label>Client Contact</label><input id="fContact" placeholder="Contact person"/></div>
         <div class="field"><label>Client Phone</label><input id="fPhone" placeholder="+267 7..."/></div>
-        <div class="field"><label>Product</label><select id="fProduct" required></select></div>
+        <div class="field"><label>Product</label><select id="fProduct" required onchange="updateOrderLowStockWarning()"></select><div id="orderLowStockWarning" style="margin-top:8px"></div></div>
         <div class="field"><label>Quantity</label><input id="fQty" type="number" min="1" value="20" required/></div>
         <div class="field"><label>Order Date</label><input id="fOrderDate" type="date" required/></div>
         <div class="field"><label>Delivery Date</label><input id="fDue" type="date" required/></div>
@@ -352,7 +354,7 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
   <div class="modal" style="max-width:640px">
     <div class="section-head"><h2 id="vNum">Order</h2><button class="tiny" onclick="closeModal('viewOrderModal')">✕</button></div>
     <div id="viewOrderBody"></div>
-    <div class="modal-actions"><button class="btn danger" id="deleteOrderBtn" onclick="deleteOrderConfirm()">Delete Order</button><button class="btn" onclick="closeModal('viewOrderModal')">Close</button></div>
+    <div class="modal-actions"><button class="btn danger" id="deleteOrderBtn" onclick="deleteOrderConfirm()">Delete Order</button><button class="btn" onclick="reorderFromOrder()">↻ Reorder</button><button class="btn" onclick="closeModal('viewOrderModal')">Close</button></div>
   </div>
 </div>
 
@@ -393,6 +395,14 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
       <div class="field"><label>Work completed</label><textarea id="stopNotes" required placeholder="Describe what you completed during this session..."></textarea></div>
       <div class="modal-actions"><button type="button" class="btn" onclick="closeModal('stopModal')">Cancel</button><button class="btn primary">Save Work Log</button></div>
     </form>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="globalSearchModal">
+  <div class="modal" style="max-width:480px">
+    <div class="section-head"><h2>Search</h2><button class="tiny" onclick="closeModal('globalSearchModal')">✕</button></div>
+    <input type="text" class="search" id="globalSearchInput" placeholder="Client, order number, or product..." oninput="renderGlobalSearchResults()" style="width:100%"/>
+    <div id="globalSearchResults" style="margin-top:14px;max-height:50vh;overflow:auto"></div>
   </div>
 </div>
 
@@ -566,6 +576,14 @@ function clearAllData(){
  db.timers=[];
  db.stockMoves=[];
  saveDB();renderAll();toast("Data cleared — employee accounts kept");
+}
+function exportFullBackupJSON(){
+ if(!isAdmin()){toast("Only an admin can export a full backup");return}
+ const blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement("a");a.href=url;a.download=`jonel-backup-${TODAY}.json`;document.body.appendChild(a);a.click();document.body.removeChild(a);
+ URL.revokeObjectURL(url);
+ toast("Full backup downloaded");
 }
 
 
@@ -905,9 +923,79 @@ function renderCustomers(){
  customersBody.innerHTML=arr.map(c=>`<tr><td><strong>${c.name}</strong></td><td>${c.contact||"—"}</td><td>${c.phone||"—"}</td><td>${c.orders}</td><td>${c.units}</td><td>${fmtMoney(c.value)}</td><td>${dateText(c.last)}</td></tr>`).join("")||'<tr><td colspan="7" class="empty">No customers yet.</td></tr>';
 }
 
+function openGlobalSearch(){
+ document.getElementById("globalSearchInput").value="";
+ document.getElementById("globalSearchResults").innerHTML='<div class="empty">Start typing a client, order number, or product.</div>';
+ document.getElementById("globalSearchModal").classList.add("open");
+ setTimeout(()=>document.getElementById("globalSearchInput").focus(),50);
+}
+function renderGlobalSearchResults(){
+ const q=document.getElementById("globalSearchInput").value.trim().toLowerCase();
+ const host=document.getElementById("globalSearchResults");
+ if(!q){host.innerHTML='<div class="empty">Start typing a client, order number, or product.</div>';return}
+ const orderMatches=db.orders.filter(o=>[o.client,o.num,o.product].some(x=>(x||"").toLowerCase().includes(q))).slice(0,8);
+ const clientNames=[...new Set(db.orders.map(o=>o.client))].filter(c=>c.toLowerCase().includes(q)).slice(0,5);
+ if(!orderMatches.length&&!clientNames.length){host.innerHTML='<div class="empty">No matches.</div>';return}
+ let html="";
+ if(orderMatches.length){
+  html+=`<div class="sub" style="margin-bottom:6px">ORDERS</div>`;
+  html+=orderMatches.map(o=>`<div class="list-row" style="cursor:pointer" onclick="jumpToOrder('${o.id}')"><div><strong style="font-size:12px">${o.num} — ${o.client}</strong><div class="sub">${o.product} · ${stageLabel(o.stage)}</div></div><span class="badge ${statusBadge(o.stage)}">${stageLabel(o.stage)}</span></div>`).join("");
+ }
+ if(clientNames.length){
+  html+=`<div class="sub" style="margin:12px 0 6px">CUSTOMERS</div>`;
+  html+=clientNames.map(c=>`<div class="list-row" style="cursor:pointer" onclick="jumpToCustomer('${c.replace(/'/g,"\\'")}')"><strong style="font-size:12px">${c}</strong><span class="badge">View orders</span></div>`).join("");
+ }
+ host.innerHTML=html;
+}
+function jumpToOrder(id){
+ closeModal("globalSearchModal");
+ showPage("orders");
+ document.getElementById("orderSearch").value="";
+ renderOrders();
+ viewOrder(id);
+}
+function jumpToCustomer(name){
+ closeModal("globalSearchModal");
+ showPage("orders");
+ document.getElementById("orderSearch").value=name;
+ renderOrders();
+}
+
 function openOrderModal(){
  fProduct.innerHTML=PRODUCTS.map(p=>`<option>${p}</option>`).join("");fEmployee.innerHTML=employeesList().map(e=>`<option>${e}</option>`).join("");
- fOrderDate.value=TODAY;fDue.value=isoPlusDays(14);document.getElementById("orderModal").classList.add("open")
+ fOrderDate.value=TODAY;fDue.value=isoPlusDays(14);document.getElementById("orderModal").classList.add("open");
+ updateOrderLowStockWarning();
+}
+function updateOrderLowStockWarning(){
+ const el=document.getElementById("orderLowStockWarning");
+ if(!el)return;
+ const label=fProduct.value||"";
+ const keyword=(label.split(" ")[0]||"").toLowerCase();
+ const related=keyword?db.inventory.filter(i=>i.qty<=i.min&&i.name.toLowerCase().includes(keyword)):[];
+ const allLow=db.inventory.filter(i=>i.qty<=i.min);
+ if(related.length){
+  el.innerHTML=`<div class="badge danger" style="margin-bottom:4px">⚠ Possibly related, low stock</div><div style="font-size:12px;color:var(--muted)">${related.map(i=>`${i.name} (${i.qty} ${i.unit} left)`).join(", ")}</div>`;
+ } else if(allLow.length){
+  el.innerHTML=`<div style="font-size:11px;color:var(--muted)">${allLow.length} other item${allLow.length>1?"s":""} currently low on stock — <a href="#" onclick="event.preventDefault();closeModal('orderModal');showPage('inventory')" style="color:var(--accent)">check Inventory</a></div>`;
+ } else {
+  el.innerHTML="";
+ }
+}
+function reorderFromOrder(){
+ const id=window._viewingOrderId;const o=db.orders.find(x=>x.id===id);if(!o)return;
+ closeModal("viewOrderModal");
+ openOrderModal();
+ fClient.value=o.client;fContact.value=o.contact||"";fPhone.value=o.phone||"";
+ fProduct.value=o.product;
+ fQty.value=o.qty;
+ fNotes.value=o.notes||"";
+ fPriority.value=o.priority||"Normal";
+ fEmployee.value=o.employee||fEmployee.value;
+ const sizes=o.sizes||{};
+ sizeXS.value=sizes.XS||0;sizeS.value=sizes.S||0;sizeM.value=sizes.M||0;sizeL.value=sizes.L||0;sizeXL.value=sizes.XL||0;size2XL.value=sizes["2XL"]||0;
+ fValue.value=o.value||0;fPaid.value=0;
+ updateOrderLowStockWarning();
+ toast(`Prefilled from ${o.num} — review and create`);
 }
 function closeModal(id){document.getElementById(id).classList.remove("open")}
 function nextOrderNumber(){
@@ -1007,9 +1095,11 @@ function linkEmployeeToSession(session){
 function applyPermissions(){
  const badge=document.getElementById("roleBadge");
  const resetBtn=document.getElementById("resetDemoBtn");
+ const backupBtn=document.getElementById("backupBtn");
  const admin=isAdmin();
  if(badge) badge.style.display=admin?"inline-flex":"none";
  if(resetBtn) resetBtn.style.display=admin?"":"none";
+ if(backupBtn) backupBtn.style.display=admin?"":"none";
 }
 async function startApp(session){
  appStarted=true;
