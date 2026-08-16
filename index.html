@@ -317,6 +317,12 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
         <div class="toolbar"><input class="search" id="customerSearch" placeholder="Search customers..." oninput="renderCustomers()"/></div>
         <div class="card table-card"><table class="table"><thead><tr><th>Customer</th><th>Contact</th><th>Phone</th><th>Orders</th><th>Units</th><th>Total Value</th><th>Last Order</th></tr></thead><tbody id="customersBody"></tbody></table></div>
       </section>
+
+      <section class="page" id="page-pricelist">
+        <div class="page-title-block"><h2>Price List</h2><p>Standard prices for everything Jonel Sportif sells.</p></div>
+        <div class="note" id="priceListNote" style="margin-bottom:14px"></div>
+        <div class="card table-card"><table class="table"><thead><tr><th>Product</th><th>Price per unit</th><th>Notes</th></tr></thead><tbody id="priceListBody"></tbody></table></div>
+      </section>
     </div>
   </main>
 </div>
@@ -329,8 +335,8 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
         <div class="field"><label>Client</label><input id="fClient" required placeholder="e.g. Gaborone United"/></div>
         <div class="field"><label>Client Contact</label><input id="fContact" placeholder="Contact person"/></div>
         <div class="field"><label>Client Phone</label><input id="fPhone" placeholder="+267 7..."/></div>
-        <div class="field"><label>Product</label><select id="fProduct" required onchange="updateOrderLowStockWarning()"></select><div id="orderLowStockWarning" style="margin-top:8px"></div></div>
-        <div class="field"><label>Quantity</label><input id="fQty" type="number" min="1" value="20" required/></div>
+        <div class="field"><label>Product</label><select id="fProduct" required onchange="updateOrderLowStockWarning();suggestOrderValue()"></select><div id="orderLowStockWarning" style="margin-top:8px"></div></div>
+        <div class="field"><label>Quantity</label><input id="fQty" type="number" min="1" value="20" required oninput="suggestOrderValue()"/></div>
         <div class="field"><label>Order Date</label><input id="fOrderDate" type="date" required/></div>
         <div class="field"><label>Delivery Date</label><input id="fDue" type="date" required/></div>
         <div class="field"><label>Order Value (P)</label><input id="fValue" type="number" min="0" step="0.01" value="0"/></div>
@@ -473,7 +479,8 @@ function ic(name){
   users:'<circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c1-3.5 3.5-5.5 5.5-5.5s4.5 2 5.5 5.5"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.3c2 .3 3.6 2 4.4 4.7"/>',
   stack:'<path d="M12 3l8 4.5-8 4.5-8-4.5 8-4.5z"/><path d="M4 12l8 4.5 8-4.5M4 16.5L12 21l8-4.5"/>',
   gauge:'<path d="M3 12a9 9 0 1118 0"/><path d="M12 12l4-4"/>',
-  alertbox:'<path d="M12 3l9 5v8l-9 5-9-5V8l9-5z"/><path d="M12 8v5"/><circle cx="12" cy="16.3" r=".4" fill="currentColor" stroke="none"/>'
+  alertbox:'<path d="M12 3l9 5v8l-9 5-9-5V8l9-5z"/><path d="M12 8v5"/><circle cx="12" cy="16.3" r=".4" fill="currentColor" stroke="none"/>',
+  tag:'<path d="M20.59 13.41L13.41 20.59a2 2 0 01-2.82 0L3 13V3h10l7.59 7.59a2 2 0 010 2.82z"/><circle cx="7.5" cy="7.5" r="1.3" fill="currentColor" stroke="none"/>'
  };
  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths[name]||''}</svg>`;
 }
@@ -541,10 +548,19 @@ function mergeIncomingDB(next){
   if(!db.timers) db.timers=[];
   if(!db.stockMoves) db.stockMoves=[];
   if(!db.logs) db.logs=[];
+  ensurePriceList();
   const mine=db.employees.find(e=>e.id===myEmployeeId);
   if(mine) selectedEmployee=mine.name;
   else if(!employeesList().includes(selectedEmployee)) selectedEmployee=employeesList()[0];
   applyPermissions();
+}
+function ensurePriceList(){
+ if(!db.priceList) db.priceList=[];
+ let changed=false;
+ PRODUCTS.forEach(p=>{
+  if(!db.priceList.find(x=>x.product===p)){ db.priceList.push({product:p,price:0,notes:""}); changed=true; }
+ });
+ return changed;
 }
 async function syncNow(silent){
   try{
@@ -603,7 +619,7 @@ function toggleSidebar(){document.getElementById("sidebar").classList.toggle("op
 function employeesList(){const list=(db.employees&&db.employees.length)?db.employees:DEMO.employees;return list.map(e=>e.name)}
 
 const navItems=[
- ["dashboard","Dashboard","grid"],["orders","Orders","receipt"],["production","Production","layers"],["inventory","Inventory","box"],["worklog","Work Log","clock"],["timesheets","Timesheets","calendar"],["customers","Customers","users"]
+ ["dashboard","Dashboard","grid"],["orders","Orders","receipt"],["production","Production","layers"],["inventory","Inventory","box"],["worklog","Work Log","clock"],["timesheets","Timesheets","calendar"],["customers","Customers","users"],["pricelist","Price List","tag"]
 ];
 function initNav(){
  const n=document.getElementById("nav");n.innerHTML=navItems.map(([k,l,icon])=>`<button data-page="${k}" onclick="showPage('${k}')">${ic(icon)}<span>${l}</span></button>`).join("");
@@ -613,7 +629,7 @@ function showPage(k){
  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
  document.getElementById("page-"+k).classList.add("active");
  document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===k));
- const labels={dashboard:["Operations Dashboard","Live view of orders, production, stock and staff."],orders:["Orders","Track every customer order and deadline."],production:["Production","Follow jobs from design to delivery."],inventory:["Inventory","Office stock, fabrics and production materials."],worklog:["Work Log","Employees record exactly what they are working on."],timesheets:["Timesheets","Daily, weekly and monthly employee work hours."],customers:["Customers","Customer order history and value."]};
+ const labels={dashboard:["Operations Dashboard","Live view of orders, production, stock and staff."],orders:["Orders","Track every customer order and deadline."],production:["Production","Follow jobs from design to delivery."],inventory:["Inventory","Office stock, fabrics and production materials."],worklog:["Work Log","Employees record exactly what they are working on."],timesheets:["Timesheets","Daily, weekly and monthly employee work hours."],customers:["Customers","Customer order history and value."],pricelist:["Price List","Standard prices for everything Jonel Sportif sells."]};
  document.getElementById("pageTitle").textContent=labels[k][0];
  document.getElementById("pageSubtitle").textContent=labels[k][1];
  document.getElementById("sidebar").classList.remove("open");
@@ -964,7 +980,9 @@ function jumpToCustomer(name){
 function openOrderModal(){
  fProduct.innerHTML=PRODUCTS.map(p=>`<option>${p}</option>`).join("");fEmployee.innerHTML=employeesList().map(e=>`<option>${e}</option>`).join("");
  fOrderDate.value=TODAY;fDue.value=isoPlusDays(14);document.getElementById("orderModal").classList.add("open");
+ fValue.dataset.userEdited="";fValue.dataset.auto="";
  updateOrderLowStockWarning();
+ suggestOrderValue();
 }
 function updateOrderLowStockWarning(){
  const el=document.getElementById("orderLowStockWarning");
@@ -981,6 +999,17 @@ function updateOrderLowStockWarning(){
   el.innerHTML="";
  }
 }
+function suggestOrderValue(){
+ if(!db.priceList)return;
+ const item=db.priceList.find(x=>x.product===fProduct.value);
+ if(!item||!item.price)return;
+ const qty=Number(fQty.value)||0;
+ if(qty<=0)return;
+ if(fValue.dataset.userEdited==="1")return;
+ fValue.value=(item.price*qty).toFixed(2);
+ fValue.dataset.auto="1";
+}
+fValue.addEventListener("input",()=>{ if(fValue.dataset.auto!=="1") fValue.dataset.userEdited="1"; fValue.dataset.auto=""; });
 function reorderFromOrder(){
  const id=window._viewingOrderId;const o=db.orders.find(x=>x.id===id);if(!o)return;
  closeModal("viewOrderModal");
@@ -993,7 +1022,7 @@ function reorderFromOrder(){
  fEmployee.value=o.employee||fEmployee.value;
  const sizes=o.sizes||{};
  sizeXS.value=sizes.XS||0;sizeS.value=sizes.S||0;sizeM.value=sizes.M||0;sizeL.value=sizes.L||0;sizeXL.value=sizes.XL||0;size2XL.value=sizes["2XL"]||0;
- fValue.value=o.value||0;fPaid.value=0;
+ fValue.value=o.value||0;fPaid.value=0;fValue.dataset.userEdited="1";
  updateOrderLowStockWarning();
  toast(`Prefilled from ${o.num} — review and create`);
 }
@@ -1038,7 +1067,33 @@ async function saveOrder(e){
 function fillFilters(){
  const s=document.getElementById("orderStatusFilter");if(s&&s.options.length===1)s.innerHTML='<option value="">All statuses</option>'+STAGES.map(x=>`<option value="${x[1]}">${x[0]}</option>`).join("");
 }
-function renderAll(){fillFilters();renderDashboard();renderOrders();renderBoard();renderInventory();renderWorkLog();renderTimesheets();renderCustomers()}
+function renderAll(){fillFilters();renderDashboard();renderOrders();renderBoard();renderInventory();renderWorkLog();renderTimesheets();renderCustomers();renderPriceList()}
+function renderPriceList(){
+ const el=document.getElementById("priceListBody");if(!el)return;
+ ensurePriceList();
+ const admin=isAdmin();
+ document.getElementById("priceListNote").textContent=admin
+  ?"Prices apply per unit. Edit any field below — changes save automatically and everyone sees them next sync."
+  :"Prices apply per unit. Contact an admin to update pricing.";
+ el.innerHTML=db.priceList.map(item=>{
+  if(admin){
+   return `<tr>
+    <td><strong>${item.product}</strong></td>
+    <td><input type="number" min="0" step="0.01" value="${item.price}" style="width:110px" onchange="updatePriceListItem('${item.product.replace(/'/g,"\\'")}','price',this.value)"/></td>
+    <td><input type="text" value="${(item.notes||"").replace(/"/g,'&quot;')}" style="width:100%" placeholder="e.g. sizes 2XL+ add P10, bulk discount over 50" onchange="updatePriceListItem('${item.product.replace(/'/g,"\\'")}','notes',this.value)"/></td>
+   </tr>`;
+  }
+  return `<tr><td><strong>${item.product}</strong></td><td>${fmtMoney(item.price)}</td><td>${item.notes||"—"}</td></tr>`;
+ }).join("")||'<tr><td colspan="3" class="empty">No products yet.</td></tr>';
+}
+async function updatePriceListItem(product,field,value){
+ if(!isAdmin()){toast("Only an admin can edit the price list");renderPriceList();return}
+ const item=db.priceList.find(x=>x.product===product);if(!item)return;
+ if(field==="price") item.price=Number(value)||0;
+ else item.notes=value;
+ await saveDB();
+ toast("Price list updated");
+}
 
 window.addEventListener("error",(event)=>{
   console.error(event.error||event.message);
@@ -1109,10 +1164,11 @@ async function startApp(session){
  if(!db.timers) db.timers=[];
  if(!db.stockMoves) db.stockMoves=[];
  if(!db.logs) db.logs=[];
+ const createdPriceList=ensurePriceList();
  const createdEmp=linkEmployeeToSession(session);
  const fixedDup=dedupeOrderNumbers();
  applyPermissions();
- if(createdEmp||fixedDup>0){
+ if(createdEmp||fixedDup>0||createdPriceList){
   await saveDB();
   if(fixedDup>0) toast(`Fixed ${fixedDup} duplicate order number${fixedDup>1?"s":""}`);
  }
