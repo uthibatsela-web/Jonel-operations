@@ -214,12 +214,12 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
     <header class="topbar">
       <div style="display:flex;align-items:center;gap:11px">
         <button class="mobile-menu" onclick="toggleSidebar()">☰</button>
-        <div><h1 id="pageTitle">Gaborone Head Office</h1><div class="sub" id="pageSubtitle">Operations period: August 2026</div></div>
+        <div><h1 id="pageTitle">Operations Dashboard</h1><div class="sub" id="pageSubtitle">Live view of orders, production, stock and staff.</div></div>
       </div>
       <div class="actions">
         <div class="desktop-only" style="text-align:right;margin-right:8px"><strong style="font-size:11px;display:block" id="whoAmI">Operations Admin</strong><span class="sub" id="loggedInEmail">JONEL Sportif</span> <span class="badge dark" id="roleBadge" style="display:none;margin-left:4px">Admin</span></div>
         <button class="btn" onclick="syncNow()">⟳ Sync</button>
-        <button class="btn desktop-only" id="resetDemoBtn" onclick="resetDemo()" style="display:none">Reset demo</button>
+        <button class="btn desktop-only" id="resetDemoBtn" onclick="clearAllData()" style="display:none">Clear all data</button>
         <button class="btn desktop-only" onclick="doLogout()">Log out</button>
         <button class="btn primary" onclick="openOrderModal()">+ New Order</button>
       </div>
@@ -537,9 +537,15 @@ function isAdmin(){
  const emp=db.employees.find(e=>e.id===myEmployeeId);
  return !!(emp&&emp.role==="admin");
 }
-function resetDemo(){
- if(!isAdmin()){toast("Only an admin can reset the shared data");return}
- if(confirm("Reset all shared data to the original demo? This affects everyone on the team.")){db=clone(DEMO);saveDB();renderAll();toast("Demo data reset")}
+function clearAllData(){
+ if(!isAdmin()){toast("Only an admin can clear data");return}
+ if(!confirm("Clear all orders, inventory, work logs and active timers?\n\nEmployee accounts and admin roles are kept.\n\nThis cannot be undone."))return;
+ db.orders=[];
+ db.inventory=[];
+ db.logs=[];
+ db.timers=[];
+ db.stockMoves=[];
+ saveDB();renderAll();toast("Data cleared — employee accounts kept");
 }
 
 
