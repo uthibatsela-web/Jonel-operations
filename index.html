@@ -677,9 +677,10 @@ function getFilteredOrders(){
 }
 function renderOrders(){
  const arr=getFilteredOrders();
+ const admin=isAdmin();
  document.getElementById("ordersBody").innerHTML=arr.map(o=>{
   const d=dayDiff(TODAY,o.due),deadline=o.stage!=="delivered"&&d<0?`<span class="badge danger">${Math.abs(d)}d overdue</span>`:dateText(o.due);
-  return `<tr><td><strong style="cursor:pointer" onclick="viewOrder('${o.id}')">${o.num}</strong><div class="sub"><span class="badge ${priorityBadge(o.priority)}">${o.priority}</span></div></td><td>${o.client}</td><td>${o.product}</td><td><strong>${o.qty}</strong></td><td>${deadline}</td><td><span class="badge ${statusBadge(o.stage)}">${stageLabel(o.stage)}</span></td><td style="min-width:120px"><div class="progress"><span style="width:${progressFor(o.stage)}%"></span></div><div class="sub">${progressFor(o.stage)}%</div></td><td>${fmtMoney(o.value)}<div class="sub">Bal ${fmtMoney(o.value-o.paid)}</div></td><td><button class="tiny" onclick="viewOrder('${o.id}')">View</button></td></tr>`
+  return `<tr><td><strong style="cursor:pointer" onclick="viewOrder('${o.id}')">${o.num}</strong><div class="sub"><span class="badge ${priorityBadge(o.priority)}">${o.priority}</span></div></td><td>${o.client}</td><td>${o.product}</td><td><strong>${o.qty}</strong></td><td>${deadline}</td><td><span class="badge ${statusBadge(o.stage)}">${stageLabel(o.stage)}</span></td><td style="min-width:120px"><div class="progress"><span style="width:${progressFor(o.stage)}%"></span></div><div class="sub">${progressFor(o.stage)}%</div></td><td>${fmtMoney(o.value)}<div class="sub">Bal ${fmtMoney(o.value-o.paid)}</div></td><td style="white-space:nowrap"><button class="tiny" onclick="viewOrder('${o.id}')">View</button>${admin?` <button class="tiny" style="color:var(--danger);border-color:rgba(255,107,118,.4)" onclick="deleteOrderById('${o.id}')">Delete</button>`:""}</td></tr>`
  }).join("")||'<tr><td colspan="9" class="empty">No matching orders.</td></tr>';
 }
 function toCSVValue(v){
@@ -754,11 +755,19 @@ function setOrderPriority(id,priority){
  const o=db.orders.find(x=>x.id===id);if(!o)return;
  o.priority=priority;saveDB();renderAll();
 }
-function deleteOrderConfirm(){
+function deleteOrderById(id){
  if(!isAdmin()){toast("Only an admin can delete orders");return}
+ const o=db.orders.find(x=>x.id===id);if(!o)return;
+ if(!confirm(`Delete order ${o.num} — ${o.client}? This cannot be undone.`))return;
+ db.orders=db.orders.filter(x=>x.id!==id);
+ saveDB();
+ if(window._viewingOrderId===id) closeModal('viewOrderModal');
+ renderAll();
+ toast('Order deleted');
+}
+function deleteOrderConfirm(){
  const id=window._viewingOrderId;if(!id)return;
- if(!confirm('Delete this order? This cannot be undone.'))return;
- db.orders=db.orders.filter(o=>o.id!==id);saveDB();closeModal('viewOrderModal');renderAll();toast('Order deleted');
+ deleteOrderById(id);
 }
 
 function renderInventory(){
