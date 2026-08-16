@@ -448,7 +448,7 @@ function ic(name){
 }
 const TODAY=new Date().toISOString().slice(0,10);
 const DEMO={
- employees:["Tebo","Neo","Kago","Thato","Lorato","Mpho"],
+ employees:[{id:"e1",name:"Tebo",email:null},{id:"e2",name:"Neo",email:null},{id:"e3",name:"Kago",email:null},{id:"e4",name:"Thato",email:null},{id:"e5",name:"Lorato",email:null},{id:"e6",name:"Mpho",email:null}],
  orders:[
   {id:"o1",num:"JON-2026-0087",client:"Gaborone United",contact:"Team Manager",phone:"+267 71 000 001",product:"Football Kits",qty:35,orderDate:"2026-08-02",due:"2026-08-20",stage:"sewing",priority:"High",value:14000,paid:8000,employee:"Tebo",sizes:{S:5,M:12,L:12,XL:6},notes:"Home and away kit",history:[{ts:Date.now()-9*86400000,note:"Order created by Tebo"},{ts:Date.now()-2*86400000,note:"Stage changed to Sewing by Tebo"}]},
   {id:"o2",num:"JON-2026-0088",client:"BDF XI",contact:"Procurement",phone:"+267 72 000 002",product:"Tracksuits",qty:28,orderDate:"2026-08-04",due:"2026-08-22",stage:"printing",priority:"Normal",value:11200,paid:5600,employee:"Thato",sizes:{M:10,L:10,XL:8},notes:"Navy tracksuits",history:[{ts:Date.now()-7*86400000,note:"Order created by Thato"}]},
@@ -503,19 +503,16 @@ async function saveDB(){
     if(error) throw error;
   }catch(e){ console.warn('save failed', e); toast('Could not save — check connection'); }
 }
-function loadSelectedEmployee(){
-  try{ return localStorage.getItem('jonelSelectedEmployee'); }catch(e){ return null; }
-}
-function saveSelectedEmployee(name){
-  try{ localStorage.setItem('jonelSelectedEmployee', name); }catch(e){}
-}
+let myEmployeeId=null;
 function mergeIncomingDB(next){
   db=next;
   if(!db.employees||!db.employees.length) db.employees=clone(DEMO.employees);
   if(!db.timers) db.timers=[];
   if(!db.stockMoves) db.stockMoves=[];
   if(!db.logs) db.logs=[];
-  if(!db.employees.includes(selectedEmployee)) selectedEmployee=db.employees[0];
+  const mine=db.employees.find(e=>e.id===myEmployeeId);
+  if(mine) selectedEmployee=mine.name;
+  else if(!employeesList().includes(selectedEmployee)) selectedEmployee=employeesList()[0];
 }
 async function syncNow(silent){
   try{
@@ -550,7 +547,7 @@ function dateText(s){return s?new Date(s+"T00:00:00").toLocaleDateString("en-GB"
 function isoPlusDays(n){const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)}
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._x);t._x=setTimeout(()=>t.classList.remove("show"),2200)}
 function toggleSidebar(){document.getElementById("sidebar").classList.toggle("open")}
-function employeesList(){return db.employees&&db.employees.length?db.employees:['Unassigned']}
+function employeesList(){const list=(db.employees&&db.employees.length)?db.employees:DEMO.employees;return list.map(e=>e.name)}
 
 const navItems=[
  ["dashboard","Dashboard","grid"],["orders","Orders","receipt"],["production","Production","layers"],["inventory","Inventory","box"],["worklog","Work Log","clock"],["timesheets","Timesheets","calendar"],["customers","Customers","users"]
@@ -682,7 +679,7 @@ function saveAdjustment(e){e.preventDefault();const item=db.inventory.find(x=>x.
 function orderOptions(){return db.orders.filter(o=>o.stage!=="delivered").map(o=>`<option value="${o.id}">${o.num} · ${o.client} · ${o.product}</option>`).join("")}
 function renderEmployeeStrip(){
  const strip=document.getElementById("employeeStrip");
- strip.innerHTML=employeesList().map(e=>`<button class="employee-chip ${e===selectedEmployee?"active":""}" onclick="selectEmployee('${e.replace(/'/g,"\\'")}')">${e}</button>`).join("")+`<button class="employee-chip" onclick="addEmployeePrompt()">+ Add</button>`;
+ strip.innerHTML=`<div class="employee-chip active" style="cursor:default">You: ${selectedEmployee}</div><button class="employee-chip" onclick="editMyDisplayName()">✎ Edit my name</button>`;
 }
 function renderWorkLog(){
  renderEmployeeStrip();
@@ -691,11 +688,13 @@ function renderWorkLog(){
  timerEmployeeLabel.textContent=`Employee: ${selectedEmployee}`;
  renderTimerState();renderTodayLogs();
 }
-function selectEmployee(e){selectedEmployee=e;saveSelectedEmployee(e);renderWorkLog();renderTimesheets();renderDashboard()}
-function addEmployeePrompt(){
- const name=prompt('Add team member name:');if(!name)return;const trimmed=name.trim();if(!trimmed)return;
- if(!db.employees.includes(trimmed)){db.employees.push(trimmed);saveDB();}
- selectEmployee(trimmed);
+async function editMyDisplayName(){
+ const emp=db.employees.find(e=>e.id===myEmployeeId);
+ if(!emp){toast("Could not find your account record");return}
+ const name=prompt("Your display name (shown on orders and timesheets):",emp.name);
+ if(!name)return;const trimmed=name.trim();if(!trimmed)return;
+ emp.name=trimmed;selectedEmployee=trimmed;
+ await saveDB();renderAll();toast("Display name updated");
 }
 function syncTimerTask(){
  const o=db.orders.find(x=>x.id===timerOrder.value);const options=["Design","Client Approval","Print Preparation","Printing / Sublimation","Cutting","Sewing","Quality Control","Packaging","Delivery Preparation"];
@@ -765,6 +764,21 @@ function nextOrderNumber(){
  while(db.orders.some(o=>o.num===num)){candidate++;num=`JON-${year}-${String(candidate).padStart(4,"0")}`;}
  return num;
 }
+function dedupeOrderNumbers(){
+ const seen=new Set();let fixedCount=0;
+ const sorted=[...db.orders].sort((a,b)=>(a.id||"").localeCompare(b.id||""));
+ sorted.forEach(o=>{
+  if(seen.has(o.num)){
+   const oldNum=o.num;
+   o.num=nextOrderNumber();
+   o.history=o.history||[];
+   o.history.push({ts:Date.now(),note:`Order number corrected from ${oldNum} to ${o.num} (was a duplicate)`});
+   fixedCount++;
+  }
+  seen.add(o.num);
+ });
+ return fixedCount;
+}
 async function saveOrder(e){
  e.preventDefault();
  const totalSizes=["XS","S","M","L","XL","2XL"].reduce((a,s)=>a+Number(document.getElementById("size"+s).value||0),0);const qty=Number(fQty.value);
@@ -815,6 +829,20 @@ async function doLogout(){
  try{ await supa.auth.signOut(); }catch(e){}
 }
 
+function linkEmployeeToSession(session){
+ const email=(session&&session.user&&session.user.email)||"";
+ if(!email){ myEmployeeId=db.employees[0]?db.employees[0].id:null; selectedEmployee=db.employees[0]?db.employees[0].name:"Unassigned"; return false; }
+ let emp=db.employees.find(e=>e.email&&e.email.toLowerCase()===email.toLowerCase());
+ let created=false;
+ if(!emp){
+  emp={id:"e"+Date.now(),name:email.split("@")[0],email};
+  db.employees.push(emp);
+  created=true;
+ }
+ myEmployeeId=emp.id;
+ selectedEmployee=emp.name;
+ return created;
+}
 async function startApp(session){
  appStarted=true;
  document.getElementById("loggedInEmail").textContent=session&&session.user?session.user.email:"JONEL Sportif";
@@ -823,8 +851,12 @@ async function startApp(session){
  if(!db.timers) db.timers=[];
  if(!db.stockMoves) db.stockMoves=[];
  if(!db.logs) db.logs=[];
- const saved=loadSelectedEmployee();
- selectedEmployee=(saved&&db.employees.includes(saved))?saved:db.employees[0];
+ const createdEmp=linkEmployeeToSession(session);
+ const fixedDup=dedupeOrderNumbers();
+ if(createdEmp||fixedDup>0){
+  await saveDB();
+  if(fixedDup>0) toast(`Fixed ${fixedDup} duplicate order number${fixedDup>1?"s":""}`);
+ }
  initNav();
  showPage("dashboard");
  subscribeRealtime();
