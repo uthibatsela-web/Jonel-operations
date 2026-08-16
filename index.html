@@ -192,6 +192,14 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
 .modal h2{color:#f2f5f7}
 .mobile-menu{background:#000}
 .empty{color:var(--muted)}
+.sidebar-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.sidebar-close{display:none;flex:0 0 auto;width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.08);border:none;color:#fff;font-size:15px;cursor:pointer;align-items:center;justify-content:center;margin-top:2px}
+.sidebar-close:hover{background:rgba(255,255,255,.16)}
+.sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:80}
+@media(max-width:760px){
+  .sidebar-close{display:flex}
+  .sidebar.open ~ .sidebar-backdrop{display:block}
+}
 </style>
 </head>
 <body>
@@ -212,10 +220,14 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
 </div>
 <div class="app">
   <aside class="sidebar" id="sidebar">
-    <div class="brand"><div class="brand-badge">JO</div><div class="brand-copy"><strong>Jonel Sportif Operations</strong><small>Sportswear Management</small></div></div>
+    <div class="sidebar-top">
+      <div class="brand"><div class="brand-badge">JO</div><div class="brand-copy"><strong>Jonel Sportif Operations</strong><small>Sportswear Management</small></div></div>
+      <button class="sidebar-close" onclick="toggleSidebar()" aria-label="Close menu">✕</button>
+    </div>
     <nav class="nav" id="nav"></nav>
     <div class="sidebar-footer">Shared across the team · every phone sees the same data<br/>Tap ⟳ Sync to pull the latest</div>
   </aside>
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
 
   <main class="main">
     <header class="topbar">
