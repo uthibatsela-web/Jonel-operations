@@ -3,7 +3,14 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>JONEL Operations Hub</title>
+<title>Jonel Sportif Operations Hub</title>
+<link rel="manifest" href="/manifest.json"/>
+<meta name="theme-color" content="#102c40"/>
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png"/>
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Jonel Ops"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
@@ -192,7 +199,7 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
   <div class="modal" style="max-width:380px;text-align:center">
     <div class="brand" style="justify-content:center;margin-bottom:18px">
       <div class="brand-badge">JO</div>
-      <div class="brand-copy" style="text-align:left"><strong>JONEL Operations</strong><small>Sportswear Management</small></div>
+      <div class="brand-copy" style="text-align:left"><strong>Jonel Sportif Operations</strong><small>Sportswear Management</small></div>
     </div>
     <form id="loginForm" onsubmit="doLogin(event)" style="text-align:left">
       <div class="field"><label>Email</label><input id="loginEmail" type="email" required placeholder="you@jonelsportif.com" autocomplete="username"/></div>
@@ -205,7 +212,7 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
 </div>
 <div class="app">
   <aside class="sidebar" id="sidebar">
-    <div class="brand"><div class="brand-badge">JO</div><div class="brand-copy"><strong>JONEL Operations</strong><small>Sportswear Management</small></div></div>
+    <div class="brand"><div class="brand-badge">JO</div><div class="brand-copy"><strong>Jonel Sportif Operations</strong><small>Sportswear Management</small></div></div>
     <nav class="nav" id="nav"></nav>
     <div class="sidebar-footer">Shared across the team · every phone sees the same data<br/>Tap ⟳ Sync to pull the latest</div>
   </aside>
@@ -217,7 +224,7 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
         <div><h1 id="pageTitle">Operations Dashboard</h1><div class="sub" id="pageSubtitle">Live view of orders, production, stock and staff.</div></div>
       </div>
       <div class="actions">
-        <div class="desktop-only" style="text-align:right;margin-right:8px"><strong style="font-size:11px;display:block" id="whoAmI">Operations Admin</strong><span class="sub" id="loggedInEmail">JONEL Sportif</span> <span class="badge dark" id="roleBadge" style="display:none;margin-left:4px">Admin</span></div>
+        <div class="desktop-only" style="text-align:right;margin-right:8px"><strong style="font-size:11px;display:block" id="whoAmI">Operations Admin</strong><span class="sub" id="loggedInEmail">Jonel Sportif</span> <span class="badge dark" id="roleBadge" style="display:none;margin-left:4px">Admin</span></div>
         <button class="btn" onclick="syncNow()">⟳ Sync</button>
         <button class="btn desktop-only" id="resetDemoBtn" onclick="clearAllData()" style="display:none">Clear all data</button>
         <button class="btn desktop-only" onclick="doLogout()">Log out</button>
@@ -237,13 +244,14 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
           <div class="card section"><div class="section-head"><h3>Orders due soon</h3><button class="tiny" onclick="showPage('orders')">View orders</button></div><div class="list" id="dueSoon"></div></div>
           <div class="card section"><div class="section-head"><h3>Staff working now</h3><button class="tiny" onclick="showPage('worklog')">Work log</button></div><div class="list" id="workingNow"></div></div>
         </div>
+        <div class="card section" style="margin-top:16px"><div class="section-head"><h3>Outstanding Balances</h3><span class="badge dark" id="outstandingTotalBadge">P0</span></div><div class="list" id="outstandingList"></div></div>
       </section>
 
       <section class="page" id="page-orders">
         <div class="page-title-block"><h2>Orders</h2><p>Manage customer orders, quantities, values and delivery deadlines.</p></div>
         <div class="toolbar">
           <input class="search" id="orderSearch" placeholder="Search client, order or product..." oninput="renderOrders()"/>
-          <div style="display:flex;gap:8px"><select class="btn" id="orderStatusFilter" onchange="renderOrders()"><option value="">All statuses</option></select><button class="btn primary" onclick="openOrderModal()">+ New Order</button></div>
+          <div style="display:flex;gap:8px"><select class="btn" id="orderStatusFilter" onchange="renderOrders()"><option value="">All statuses</option></select><button class="btn" onclick="exportOrdersCSV()">⬇ Export CSV</button><button class="btn primary" onclick="openOrderModal()">+ New Order</button></div>
         </div>
         <div class="card table-card"><table class="table"><thead><tr><th>Order</th><th>Client</th><th>Product</th><th>Qty</th><th>Due</th><th>Status</th><th>Progress</th><th>Value</th><th></th></tr></thead><tbody id="ordersBody"></tbody></table></div>
       </section>
@@ -284,7 +292,7 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
 
       <section class="page" id="page-timesheets">
         <div class="page-title-block"><h2>Timesheets</h2><p>Review employee work hours by day, month and project.</p></div>
-        <div class="toolbar"><div><strong>Employee Timesheets</strong><div class="sub">Hours by employee and project.</div></div><select class="btn" id="timesheetEmployee" onchange="renderTimesheets()"></select></div>
+        <div class="toolbar"><div><strong>Employee Timesheets</strong><div class="sub">Hours by employee and project.</div></div><div style="display:flex;gap:8px"><select class="btn" id="timesheetEmployee" onchange="renderTimesheets()"></select><button class="btn" onclick="exportTimesheetsCSV()">⬇ Export CSV</button></div></div>
         <div class="kpis" id="timeKpis"></div>
         <div class="card table-card" style="margin-top:15px"><table class="table"><thead><tr><th>Date</th><th>Employee</th><th>Order</th><th>Task</th><th>Started</th><th>Ended</th><th>Hours</th><th>Notes</th></tr></thead><tbody id="timesheetBody"></tbody></table></div>
         <div id="teamRolesCard" style="margin-top:20px"></div>
@@ -586,6 +594,34 @@ function statusBadge(stage){return stage==="delivered"||stage==="ready"?"ok":sta
 
 function monthsWindow(){const now=new Date();const arr=[];for(let i=7;i>=0;i--){arr.push(new Date(now.getFullYear(),now.getMonth()-i,1))}return arr}
 
+function getDeliveredTs(o){
+ if(!o.history) return null;
+ const entry=[...o.history].reverse().find(h=>/delivered/i.test(h.note));
+ return entry?entry.ts:null;
+}
+function avgTurnaroundDays(orders){
+ const vals=[];
+ orders.forEach(o=>{
+  if(o.stage!=="delivered"||!o.orderDate) return;
+  const deliveredTs=getDeliveredTs(o);
+  if(!deliveredTs) return;
+  const days=(deliveredTs-new Date(o.orderDate+"T00:00:00").getTime())/86400000;
+  if(days>=0) vals.push(days);
+ });
+ if(!vals.length) return null;
+ return vals.reduce((a,b)=>a+b,0)/vals.length;
+}
+function outstandingSummary(){
+ let total=0,overdueCount=0;const cutoffDays=14;
+ db.orders.forEach(o=>{
+  const bal=(o.value||0)-(o.paid||0);
+  if(bal>0){
+   total+=bal;
+   if(o.orderDate&&dayDiff(o.orderDate,TODAY)>=cutoffDays) overdueCount++;
+  }
+ });
+ return {total,overdueCount};
+}
 function renderDashboard(){
  const thisMonth=TODAY.slice(0,7);
  document.getElementById("whoAmI").textContent=selectedEmployee||"—";
@@ -595,13 +631,18 @@ function renderDashboard(){
  const units=monthOrders.reduce((a,o)=>a+o.qty,0);
  const low=db.inventory.filter(i=>i.qty<=i.min);
  const open=db.timers.length;
+ const avgDays=avgTurnaroundDays(monthOrders.length?monthOrders:db.orders);
+ const outstanding=outstandingSummary();
  const k=[
   ["receipt","Orders this month",monthOrders.length,new Date().toLocaleDateString('en-GB',{month:'long',year:'numeric'})],
   ["stack","Units this month",units,"Across this month's orders"],
   ["gauge","Active production",active.length,`${completed.length} ready/completed`],
-  ["alertbox","Low stock",low.length,open?`${open} employee${open>1?'s':''} clocked in`:"No active timers"]
+  ["alertbox","Low stock",low.length,open?`${open} employee${open>1?'s':''} clocked in`:"No active timers"],
+  ["clock","Avg turnaround",avgDays==null?"—":`${avgDays.toFixed(1)}d`,"Order date to delivery"],
+  ["layers","Outstanding balance",fmtMoney(outstanding.total),outstanding.overdueCount?`${outstanding.overdueCount} unpaid 14+ days`:"All within 14 days"]
  ];
- document.getElementById("kpis").innerHTML=k.map(x=>`<div class="card kpi"><div class="kpi-icon">${ic(x[0])}</div><div class="label">${x[1]}</div><div class="value">${x[2]}</div><div class="foot">${x[3]}</div></div>`).join("");
+ document.getElementById("kpis").innerHTML=k.map(x=>`<div class="card kpi"><div class="kpi-icon">${ic(x[0])}</div><div class="label">${x[1]}</div><div class="value" style="${x[1]==="Outstanding balance"?"font-size:19px":""}">${x[2]}</div><div class="foot">${x[3]}</div></div>`).join("");
+ document.getElementById("outstandingTotalBadge").textContent=fmtMoney(outstanding.total);
  const months=monthsWindow();
  const monthly=months.map(d=>{const key=d.toISOString().slice(0,7);return db.orders.filter(o=>monthKey(o.orderDate||o.due)===key).length});
  const mx=Math.max(...monthly,1);
@@ -612,6 +653,17 @@ function renderDashboard(){
  const soon=[...active].sort((a,b)=>a.due.localeCompare(b.due)).slice(0,5);
  document.getElementById("dueSoon").innerHTML=soon.map(o=>{const d=dayDiff(TODAY,o.due),cl=d<0?"danger":d<=3?"warn":"ok";return `<div class="list-row"><div><strong style="font-size:12px">${o.client}</strong><div class="sub">${o.product} · ${o.num}</div></div><div style="text-align:right"><span class="badge ${cl}">${d<0?Math.abs(d)+"d overdue":d===0?"Due today":d+"d"}</span><div class="sub">${dateText(o.due)}</div></div></div>`}).join("")||'<div class="empty">No open orders.</div>';
  renderWorkingNow();
+ renderOutstandingList();
+}
+function renderOutstandingList(){
+ const host=document.getElementById("outstandingList");if(!host)return;
+ const unpaid=db.orders.map(o=>({o,bal:(o.value||0)-(o.paid||0)})).filter(x=>x.bal>0).sort((a,b)=>b.bal-a.bal).slice(0,8);
+ if(!unpaid.length){host.innerHTML='<div class="empty">Nothing outstanding — all orders are paid up.</div>';return}
+ host.innerHTML=unpaid.map(({o,bal})=>{
+  const days=o.orderDate?dayDiff(o.orderDate,TODAY):0;
+  const flagged=days>=14;
+  return `<div class="list-row"><div><strong style="font-size:12px">${o.client}</strong><div class="sub">${o.num} · ${o.product}</div></div><div style="text-align:right"><span class="badge ${flagged?"danger":""}">${fmtMoney(bal)}</span><div class="sub">${flagged?days+"d unpaid":"balance due"}</div></div></div>`;
+ }).join("");
 }
 function renderWorkingNow(){
  const host=document.getElementById("workingNow");if(!host)return;
@@ -619,13 +671,38 @@ function renderWorkingNow(){
  host.innerHTML=db.timers.map(t=>{const o=db.orders.find(x=>x.id===t.orderId);return `<div class="list-row"><div><strong style="font-size:12px">${t.employee}</strong><div class="sub">${o?.client||"General"} · ${t.task}</div></div><span class="badge ok">Working now</span></div>`}).join("");
 }
 
-function renderOrders(){
+function getFilteredOrders(){
  const q=(document.getElementById("orderSearch")?.value||"").toLowerCase(),f=document.getElementById("orderStatusFilter")?.value||"";
- const arr=db.orders.filter(o=>(!f||o.stage===f)&&(!q||[o.client,o.num,o.product].some(x=>x.toLowerCase().includes(q))));
+ return db.orders.filter(o=>(!f||o.stage===f)&&(!q||[o.client,o.num,o.product].some(x=>x.toLowerCase().includes(q))));
+}
+function renderOrders(){
+ const arr=getFilteredOrders();
  document.getElementById("ordersBody").innerHTML=arr.map(o=>{
   const d=dayDiff(TODAY,o.due),deadline=o.stage!=="delivered"&&d<0?`<span class="badge danger">${Math.abs(d)}d overdue</span>`:dateText(o.due);
   return `<tr><td><strong style="cursor:pointer" onclick="viewOrder('${o.id}')">${o.num}</strong><div class="sub"><span class="badge ${priorityBadge(o.priority)}">${o.priority}</span></div></td><td>${o.client}</td><td>${o.product}</td><td><strong>${o.qty}</strong></td><td>${deadline}</td><td><span class="badge ${statusBadge(o.stage)}">${stageLabel(o.stage)}</span></td><td style="min-width:120px"><div class="progress"><span style="width:${progressFor(o.stage)}%"></span></div><div class="sub">${progressFor(o.stage)}%</div></td><td>${fmtMoney(o.value)}<div class="sub">Bal ${fmtMoney(o.value-o.paid)}</div></td><td><button class="tiny" onclick="viewOrder('${o.id}')">View</button></td></tr>`
  }).join("")||'<tr><td colspan="9" class="empty">No matching orders.</td></tr>';
+}
+function toCSVValue(v){
+ if(v==null) v="";
+ v=String(v).replace(/"/g,'""');
+ if(/[",\n]/.test(v)) v=`"${v}"`;
+ return v;
+}
+function downloadCSV(filename,headers,rows){
+ const lines=[headers.map(toCSVValue).join(",")];
+ rows.forEach(r=>lines.push(r.map(toCSVValue).join(",")));
+ const blob=new Blob(["\uFEFF"+lines.join("\r\n")],{type:"text/csv;charset=utf-8;"});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);
+ URL.revokeObjectURL(url);
+}
+function exportOrdersCSV(){
+ const arr=getFilteredOrders();
+ if(!arr.length){toast("No orders to export");return}
+ const headers=["Order #","Client","Contact","Phone","Product","Qty","Order Date","Due Date","Stage","Priority","Value","Paid","Balance","Assigned","Notes"];
+ const rows=arr.map(o=>[o.num,o.client,o.contact||"",o.phone||"",o.product,o.qty,o.orderDate||"",o.due||"",stageLabel(o.stage),o.priority,(o.value||0).toFixed(2),(o.paid||0).toFixed(2),((o.value||0)-(o.paid||0)).toFixed(2),o.employee||"",o.notes||""]);
+ downloadCSV(`jonel-orders-${TODAY}.csv`,headers,rows);
+ toast(`Exported ${arr.length} order${arr.length>1?"s":""}`);
 }
 
 function renderBoard(){
@@ -743,10 +820,15 @@ function renderTodayLogs(){
  todayLogs.innerHTML=arr.slice().reverse().map(l=>{const o=db.orders.find(x=>x.id===l.orderId);return `<div class="list-row"><div><strong style="font-size:12px">${o?.client||"General"}</strong><div class="sub">${l.task} · ${timeText(l.start)}–${timeText(l.end)}</div></div><span class="badge">${durationText(minutesBetween(l.start,l.end))}</span></div>`}).join("")||'<div class="empty">No completed work logs today.</div>';
 }
 
+function getFilteredLogs(){
+ const sel=document.getElementById("timesheetEmployee");
+ const emp=sel?.value||"";
+ return db.logs.filter(l=>!emp||l.employee===emp).slice().sort((a,b)=>b.start.localeCompare(a.start));
+}
 function renderTimesheets(){
  const sel=document.getElementById("timesheetEmployee");
  sel.innerHTML='<option value="">All employees</option>'+employeesList().map(e=>`<option ${e===sel?.value?'selected':''}>${e}</option>`).join("");
- const emp=sel?.value||"";const arr=db.logs.filter(l=>!emp||l.employee===emp).slice().sort((a,b)=>b.start.localeCompare(a.start));const mins=arr.reduce((a,l)=>a+minutesBetween(l.start,l.end),0);const today=arr.filter(l=>l.start.slice(0,10)===TODAY).reduce((a,l)=>a+minutesBetween(l.start,l.end),0);
+ const arr=getFilteredLogs();const mins=arr.reduce((a,l)=>a+minutesBetween(l.start,l.end),0);const today=arr.filter(l=>l.start.slice(0,10)===TODAY).reduce((a,l)=>a+minutesBetween(l.start,l.end),0);
  const unique=new Set(arr.map(l=>l.orderId)).size;
  timeKpis.innerHTML=[["clock","Total hours",durationText(mins)],["calendar","Today",durationText(today)],["receipt","Work sessions",arr.length],["layers","Projects",unique]].map(x=>`<div class="card kpi"><div class="kpi-icon">${ic(x[0])}</div><div class="label">${x[1]}</div><div class="value" style="font-size:22px">${x[2]}</div></div>`).join("");
  timesheetBody.innerHTML=arr.map(l=>{const o=db.orders.find(x=>x.id===l.orderId);return `<tr><td>${dateText(l.start.slice(0,10))}</td><td><strong>${l.employee}</strong></td><td>${o?.client||"-"}<div class="sub">${o?.num||""}</div></td><td>${l.task}</td><td>${timeText(l.start)}</td><td>${timeText(l.end)}</td><td><strong>${durationText(minutesBetween(l.start,l.end))}</strong></td><td style="max-width:280px">${l.notes||""}</td></tr>`}).join("")||'<tr><td colspan="8" class="empty">No work logs yet.</td></tr>';
@@ -776,6 +858,17 @@ async function toggleAdminRole(empId){
   emp.role="admin";
  }
  await saveDB();renderAll();applyPermissions();toast("Roles updated");
+}
+function exportTimesheetsCSV(){
+ const arr=getFilteredLogs();
+ if(!arr.length){toast("No timesheet entries to export");return}
+ const headers=["Date","Employee","Order #","Client","Task","Started","Ended","Hours","Notes"];
+ const rows=arr.map(l=>{
+  const o=db.orders.find(x=>x.id===l.orderId);
+  return [dateText(l.start.slice(0,10)),l.employee,o?.num||"",o?.client||"",l.task,timeText(l.start),timeText(l.end),(minutesBetween(l.start,l.end)/60).toFixed(2),l.notes||""];
+ });
+ downloadCSV(`jonel-timesheets-${TODAY}.csv`,headers,rows);
+ toast(`Exported ${arr.length} entr${arr.length>1?"ies":"y"}`);
 }
 
 function renderCustomers(){
@@ -899,7 +992,7 @@ function applyPermissions(){
 }
 async function startApp(session){
  appStarted=true;
- document.getElementById("loggedInEmail").textContent=session&&session.user?session.user.email:"JONEL Sportif";
+ document.getElementById("loggedInEmail").textContent=session&&session.user?session.user.email:"Jonel Sportif";
  db=await loadDB();
  if(!db.employees||!db.employees.length) db.employees=clone(DEMO.employees);
  if(!db.timers) db.timers=[];
