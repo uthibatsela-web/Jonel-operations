@@ -347,7 +347,7 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
 
 <div class="modal-backdrop" id="orderModal">
   <div class="modal">
-    <div class="section-head"><h2>New Sportswear Order</h2><button class="tiny" onclick="closeModal('orderModal')">✕</button></div>
+    <div class="section-head"><h2 id="orderModalTitle">New Sportswear Order</h2><button class="tiny" onclick="closeModal('orderModal')">✕</button></div>
     <form id="orderForm" onsubmit="saveOrder(event)">
       <div class="form-grid">
         <div class="field"><label>Client</label><input id="fClient" required placeholder="e.g. Gaborone United"/></div>
@@ -370,7 +370,7 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
       <button type="button" class="btn secondary" onclick="addOrderItemRow()">+ Add Another Item</button>
 
       <div class="field" style="margin-top:16px"><label>Notes</label><textarea id="fNotes" placeholder="Colours, fabric, printing method, client requirements..."></textarea></div>
-      <div class="modal-actions"><button type="button" class="btn" onclick="closeModal('orderModal')">Cancel</button><button class="btn primary" type="submit">Create Order</button></div>
+      <div class="modal-actions"><button type="button" class="btn" onclick="closeModal('orderModal')">Cancel</button><button class="btn primary" type="submit" id="orderModalSubmitBtn">Create Order</button></div>
     </form>
   </div>
 </div>
@@ -379,7 +379,7 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
   <div class="modal" style="max-width:640px">
     <div class="section-head"><h2 id="vNum">Order</h2><button class="tiny" onclick="closeModal('viewOrderModal')">✕</button></div>
     <div id="viewOrderBody"></div>
-    <div class="modal-actions"><button class="btn danger" id="deleteOrderBtn" onclick="deleteOrderConfirm()">Delete Order</button><button class="btn" onclick="reorderFromOrder()">↻ Reorder</button><button class="btn" onclick="closeModal('viewOrderModal')">Close</button></div>
+    <div class="modal-actions"><button class="btn danger" id="deleteOrderBtn" onclick="deleteOrderConfirm()">Delete Order</button><button class="btn" onclick="editOrderFromView()">✎ Edit Order</button><button class="btn" onclick="reorderFromOrder()">↻ Reorder</button><button class="btn" onclick="closeModal('viewOrderModal')">Close</button></div>
   </div>
 </div>
 
@@ -1096,12 +1096,42 @@ function jumpToCustomer(name){
  renderOrders();
 }
 
+let editingOrderId=null;
 function openOrderModal(){
+ editingOrderId=null;
+ document.getElementById("orderModalTitle").textContent="New Sportswear Order";
+ document.getElementById("orderModalSubmitBtn").textContent="Create Order";
  fEmployee.innerHTML=employeesList().map(e=>`<option>${e}</option>`).join("");
+ fClient.value="";fContact.value="";fPhone.value="";fNotes.value="";fPriority.value="Normal";fPaid.value=0;fValue.value=0;
  fOrderDate.value=TODAY;fDue.value=isoPlusDays(14);document.getElementById("orderModal").classList.add("open");
  fValue.dataset.userEdited="";fValue.dataset.auto="";
  orderItemsContainer.innerHTML="";
  addOrderItemRow();
+}
+function editOrderFromView(){
+ const id=window._viewingOrderId;const o=db.orders.find(x=>x.id===id);if(!o)return;
+ closeModal("viewOrderModal");
+ editingOrderId=id;
+ document.getElementById("orderModalTitle").textContent=`Edit Order — ${o.num}`;
+ document.getElementById("orderModalSubmitBtn").textContent="Save Changes";
+ fEmployee.innerHTML=employeesList().map(e=>`<option>${e}</option>`).join("");
+ fClient.value=o.client;fContact.value=o.contact||"";fPhone.value=o.phone||"";
+ fOrderDate.value=o.orderDate||TODAY;fDue.value=o.due||isoPlusDays(14);
+ fPriority.value=o.priority||"Normal";
+ fEmployee.value=o.employee||fEmployee.value;
+ fValue.dataset.userEdited="1";fValue.dataset.auto="";
+ fValue.value=o.value||0;fPaid.value=o.paid||0;
+ fNotes.value=o.notes||"";
+ orderItemsContainer.innerHTML="";
+ orderItems(o).forEach(it=>{
+  addOrderItemRow();
+  const row=orderItemsContainer.lastElementChild;
+  row.querySelector(".item-product").value=it.product;
+  row.querySelector(".item-qty").value=it.qty;
+  row.querySelectorAll(".item-size").forEach(inp=>{ inp.value=(it.sizes&&it.sizes[inp.dataset.size])||0; });
+ });
+ onOrderItemsChanged();
+ document.getElementById("orderModal").classList.add("open");
 }
 function orderItemRowHTML(){
  return `<div class="card section order-item-row" style="margin-bottom:10px;padding:14px">
@@ -1235,8 +1265,27 @@ async function saveOrder(e){
   if(!confirm(`Some items' sizes don't add up to their quantity:\n\n${list}\n\nSave anyway?`))return;
  }
  const totalQty=items.reduce((a,i)=>a+i.qty,0);
- // pull the latest orders first so the number can't collide with one someone else just created
+ // pull the latest orders first so we edit/number against the freshest data
  try{ const fresh=await loadDB(); if(fresh&&fresh.orders) db.orders=fresh.orders; }catch(err){}
+
+ if(editingOrderId){
+  const o=db.orders.find(x=>x.id===editingOrderId);
+  if(!o){ toast("That order no longer exists — it may have been deleted"); closeModal("orderModal"); editingOrderId=null; return; }
+  o.client=fClient.value.trim();o.contact=fContact.value.trim();o.phone=fPhone.value.trim();
+  o.items=items;
+  o.product=items.length>1?"Multiple items":items[0].product;
+  o.qty=totalQty;
+  o.sizes=items.length===1?items[0].sizes:{};
+  o.orderDate=fOrderDate.value||o.orderDate;o.due=fDue.value;
+  o.priority=fPriority.value;
+  o.value=Number(fValue.value||0);o.paid=Number(fPaid.value||0);
+  o.employee=fEmployee.value;o.notes=fNotes.value;
+  o.history=o.history||[];
+  o.history.push({ts:Date.now(),note:`Order edited by ${selectedEmployee}`});
+  saveDB();closeModal("orderModal");e.target.reset();editingOrderId=null;renderAll();showPage("orders");toast("Order updated: "+o.num);
+  return;
+ }
+
  const order={
   id:"o"+Date.now(),num:nextOrderNumber(),client:fClient.value.trim(),contact:fContact.value.trim(),phone:fPhone.value.trim(),
   items,
