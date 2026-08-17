@@ -354,7 +354,7 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
         <div class="field"><label>Client Contact</label><input id="fContact" placeholder="Contact person"/></div>
         <div class="field"><label>Client Phone</label><input id="fPhone" placeholder="+267 7..."/></div>
         <div class="field"><label>Order Date</label><input id="fOrderDate" type="date" required/></div>
-        <div class="field"><label>Delivery Date</label><input id="fDue" type="date" required/></div>
+        <div class="field"><label>Delivery Date</label><input id="fDue" type="date" required/><div class="sub" style="margin-top:4px">Suggested: 7 working days out (your usual 5–8 day turnaround) — adjust as needed</div></div>
         <div class="field"><label>Priority</label><select id="fPriority"><option>Normal</option><option>High</option><option>Urgent</option><option>Low</option></select></div>
         <div class="field"><label>Assigned Employee</label><select id="fEmployee"></select></div>
         <div class="field"><label>Order Value (P)</label><input id="fValue" type="number" min="0" step="0.01" value="0"/></div>
@@ -658,6 +658,16 @@ function durationText(min){min=Math.max(0,Math.round(min||0));return `${Math.flo
 function timeText(iso){return new Date(iso).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}
 function dateText(s){return s?new Date(s+"T00:00:00").toLocaleDateString("en-GB",{day:"2-digit",month:"short"}):"—"}
 function isoPlusDays(n){const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)}
+function addWorkingDays(startDateStr,days){
+ let d=new Date((startDateStr||TODAY)+"T00:00:00");
+ let added=0;
+ while(added<days){
+  d.setDate(d.getDate()+1);
+  const day=d.getDay();
+  if(day!==0&&day!==6) added++;
+ }
+ return d.toISOString().slice(0,10);
+}
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._x);t._x=setTimeout(()=>t.classList.remove("show"),2200)}
 function toggleSidebar(){document.getElementById("sidebar").classList.toggle("open")}
 function employeesList(){const list=(db.employees&&db.employees.length)?db.employees:DEMO.employees;return list.map(e=>e.name)}
@@ -1105,7 +1115,7 @@ function openOrderModal(){
  document.getElementById("orderModalSubmitBtn").textContent="Create Order";
  fEmployee.innerHTML=employeesList().map(e=>`<option>${e}</option>`).join("");
  fClient.value="";fContact.value="";fPhone.value="";fNotes.value="";fPriority.value="Normal";fPaid.value=0;fValue.value=0;
- fOrderDate.value=TODAY;fDue.value=isoPlusDays(14);document.getElementById("orderModal").classList.add("open");
+ fOrderDate.value=TODAY;fDue.value=addWorkingDays(TODAY,7);document.getElementById("orderModal").classList.add("open");
  fValue.dataset.userEdited="";fValue.dataset.auto="";
  orderItemsContainer.innerHTML="";
  addOrderItemRow();
@@ -1118,7 +1128,7 @@ function editOrderFromView(){
  document.getElementById("orderModalSubmitBtn").textContent="Save Changes";
  fEmployee.innerHTML=employeesList().map(e=>`<option>${e}</option>`).join("");
  fClient.value=o.client;fContact.value=o.contact||"";fPhone.value=o.phone||"";
- fOrderDate.value=o.orderDate||TODAY;fDue.value=o.due||isoPlusDays(14);
+ fOrderDate.value=o.orderDate||TODAY;fDue.value=o.due||addWorkingDays(o.orderDate||TODAY,7);
  fPriority.value=o.priority||"Normal";
  fEmployee.value=o.employee||fEmployee.value;
  fValue.dataset.userEdited="1";fValue.dataset.auto="";
