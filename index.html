@@ -132,7 +132,16 @@ body{background:radial-gradient(1100px 560px at 100% -8%,#eaf6fb 0%,rgba(234,246
 .modal-backdrop{backdrop-filter:blur(2px)}
 @keyframes modalIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 .mobile-menu{background:var(--dark)}
-@media(max-width:760px){.app{display:block}.sidebar{width:235px;left:-250px}.content{padding:16px 13px 85px}.topbar{padding:0 13px}.page-title-block h2{font-size:24px}.kpi-icon{width:32px;height:32px;border-radius:10px}.kpi-icon svg{width:15px;height:15px}.kpi .label,.kpi .value,.kpi .foot{margin-left:42px}}
+@media(max-width:760px){
+  .app{display:block}.sidebar{width:235px;left:-250px}.content{padding:16px 13px 85px}
+  .page-title-block h2{font-size:24px}.kpi-icon{width:32px;height:32px;border-radius:10px}.kpi-icon svg{width:15px;height:15px}.kpi .label,.kpi .value,.kpi .foot{margin-left:42px}
+  .topbar{height:auto;flex-wrap:wrap;row-gap:10px;padding:12px 13px}
+  .topbar-left{flex:1 1 100%}
+  .topbar .sub{display:none}
+  .topbar h1{font-size:16px;line-height:1.25}
+  .actions{flex:1 1 100%;flex-wrap:wrap;gap:8px}
+  .actions .btn{padding:8px 11px;font-size:12px;white-space:nowrap}
+}
 
 /* ===== additions: order detail / timeline / sync ===== */
 .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin-bottom:14px}
@@ -231,7 +240,7 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
 
   <main class="main">
     <header class="topbar">
-      <div style="display:flex;align-items:center;gap:11px">
+      <div class="topbar-left" style="display:flex;align-items:center;gap:11px">
         <button class="mobile-menu" onclick="toggleSidebar()">☰</button>
         <div><h1 id="pageTitle">Operations Dashboard</h1><div class="sub" id="pageSubtitle">Live view of orders, production, stock and staff.</div></div>
       </div>
@@ -315,7 +324,7 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
       <section class="page" id="page-customers">
         <div class="page-title-block"><h2>Customers</h2><p>View customer activity, order history and total value.</p></div>
         <div class="toolbar"><input class="search" id="customerSearch" placeholder="Search customers..." oninput="renderCustomers()"/></div>
-        <div class="card table-card"><table class="table"><thead><tr><th>Customer</th><th>Contact</th><th>Phone</th><th>Orders</th><th>Units</th><th>Total Value</th><th>Last Order</th></tr></thead><tbody id="customersBody"></tbody></table></div>
+        <div class="card table-card"><table class="table"><thead><tr><th>Customer</th><th>Contact</th><th>Phone</th><th>Orders</th><th>Units</th><th>Total Value</th><th>Last Order</th><th></th></tr></thead><tbody id="customersBody"></tbody></table></div>
       </section>
 
       <section class="page" id="page-pricelist">
@@ -410,6 +419,20 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
     <div class="section-head"><h2>Search</h2><button class="tiny" onclick="closeModal('globalSearchModal')">✕</button></div>
     <input type="text" class="search" id="globalSearchInput" placeholder="Client, order number, or product..." oninput="renderGlobalSearchResults()" style="width:100%"/>
     <div id="globalSearchResults" style="margin-top:14px;max-height:50vh;overflow:auto"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="editCustomerModal">
+  <div class="modal" style="max-width:460px">
+    <div class="section-head"><h2>Edit Customer</h2><button class="tiny" onclick="closeModal('editCustomerModal')">✕</button></div>
+    <form onsubmit="saveCustomerEdit(event)">
+      <input type="hidden" id="ecOldName"/>
+      <div class="field"><label>Client Name</label><input id="ecName" required/></div>
+      <div class="field" style="margin-top:12px"><label>Contact</label><input id="ecContact" placeholder="Contact person"/></div>
+      <div class="field" style="margin-top:12px"><label>Phone</label><input id="ecPhone" placeholder="+267 7..."/></div>
+      <div class="note" style="margin-top:10px">This updates the name/contact/phone on every order on file for this client.</div>
+      <div class="modal-actions"><button type="button" class="btn" onclick="closeModal('editCustomerModal')">Cancel</button><button class="btn primary" type="submit">Save Changes</button></div>
+    </form>
   </div>
 </div>
 
@@ -937,7 +960,40 @@ function renderCustomers(){
   if(o.phone)c.phone=o.phone;
  });
  const arr=Object.values(map).filter(c=>!q||c.name.toLowerCase().includes(q));
- customersBody.innerHTML=arr.map(c=>`<tr><td><strong>${c.name}</strong></td><td>${c.contact||"—"}</td><td>${c.phone||"—"}</td><td>${c.orders}</td><td>${c.units}</td><td>${fmtMoney(c.value)}</td><td>${dateText(c.last)}</td></tr>`).join("")||'<tr><td colspan="7" class="empty">No customers yet.</td></tr>';
+ const admin=isAdmin();
+ customersBody.innerHTML=arr.map(c=>`<tr><td><strong>${c.name}</strong></td><td>${c.contact||"—"}</td><td>${c.phone||"—"}</td><td>${c.orders}</td><td>${c.units}</td><td>${fmtMoney(c.value)}</td><td>${dateText(c.last)}</td><td style="white-space:nowrap">${admin?`<button class="tiny" onclick="openEditCustomer('${c.name.replace(/'/g,"\\'")}')">Edit</button> <button class="tiny" style="color:var(--danger);border-color:rgba(255,107,118,.4)" onclick="deleteCustomer('${c.name.replace(/'/g,"\\'")}')">Delete</button>`:""}</td></tr>`).join("")||'<tr><td colspan="8" class="empty">No customers yet.</td></tr>';
+}
+function openEditCustomer(name){
+ if(!isAdmin()){toast("Only an admin can edit customers");return}
+ const latest=[...db.orders].reverse().find(o=>o.client===name);
+ document.getElementById("ecOldName").value=name;
+ document.getElementById("ecName").value=name;
+ document.getElementById("ecContact").value=latest?.contact||"";
+ document.getElementById("ecPhone").value=latest?.phone||"";
+ document.getElementById("editCustomerModal").classList.add("open");
+}
+async function saveCustomerEdit(e){
+ e.preventDefault();
+ if(!isAdmin()){toast("Only an admin can edit customers");return}
+ const oldName=document.getElementById("ecOldName").value;
+ const newName=document.getElementById("ecName").value.trim();
+ const contact=document.getElementById("ecContact").value.trim();
+ const phone=document.getElementById("ecPhone").value.trim();
+ if(!newName)return;
+ let count=0;
+ db.orders.forEach(o=>{
+  if(o.client===oldName){ o.client=newName;o.contact=contact;o.phone=phone;count++; }
+ });
+ await saveDB();closeModal("editCustomerModal");renderAll();
+ toast(`Updated ${count} order${count>1?"s":""} for ${newName}`);
+}
+async function deleteCustomer(name){
+ if(!isAdmin()){toast("Only an admin can delete customers");return}
+ const count=db.orders.filter(o=>o.client===name).length;
+ if(!confirm(`Delete "${name}" and all ${count} order${count>1?"s":""} on file for them?\n\nThis removes their entire order history and cannot be undone.`))return;
+ db.orders=db.orders.filter(o=>o.client!==name);
+ await saveDB();renderAll();
+ toast(`Deleted ${name} and ${count} order${count>1?"s":""}`);
 }
 
 function openGlobalSearch(){
