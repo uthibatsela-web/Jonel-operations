@@ -928,9 +928,21 @@ function renderTeamRoles(){
   ${db.employees.map(emp=>`<tr>
     <td><strong>${emp.name}</strong>${emp.email?`<div class="sub">${emp.email}</div>`:""}</td>
     <td><span class="badge ${emp.role==="admin"?"dark":""}">${emp.role==="admin"?"Admin":"Staff"}</span></td>
-    <td><button class="tiny" onclick="toggleAdminRole('${emp.id}')">${emp.role==="admin"?"Remove admin":"Make admin"}</button></td>
+    <td style="white-space:nowrap"><button class="tiny" onclick="renameEmployee('${emp.id}')">Rename</button> <button class="tiny" onclick="toggleAdminRole('${emp.id}')">${emp.role==="admin"?"Remove admin":"Make admin"}</button></td>
   </tr>`).join("")}
   </tbody></table></div>`;
+}
+async function renameEmployee(empId){
+ if(!isAdmin()){toast("Only an admin can rename team members");return}
+ const emp=db.employees.find(e=>e.id===empId);if(!emp)return;
+ const name=prompt(`New display name for "${emp.name}"${emp.email?` (${emp.email})`:""}:`,emp.name);
+ if(!name)return;
+ const trimmed=name.trim();if(!trimmed)return;
+ const oldName=emp.name;
+ emp.name=trimmed;
+ if(emp.id===myEmployeeId) selectedEmployee=trimmed;
+ await saveDB();renderAll();
+ toast(`Renamed "${oldName}" to "${trimmed}"`);
 }
 async function toggleAdminRole(empId){
  const emp=db.employees.find(e=>e.id===empId);if(!emp)return;
