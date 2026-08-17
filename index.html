@@ -804,7 +804,10 @@ function exportOrdersCSV(){
  if(!arr.length){toast("No orders to export");return}
  const headers=["Order #","Client","Contact","Phone","Items","Total Qty","Order Date","Due Date","Stage","Priority","Value","Paid","Balance","Assigned","Notes"];
  const rows=arr.map(o=>{
-  const itemsText=orderItems(o).map(it=>`${it.product} x${it.qty}`).join("; ");
+  const itemsText=orderItems(o).map(it=>{
+   const sizesText=Object.entries(it.sizes||{}).filter(([k,v])=>v>0).map(([k,v])=>`${k}:${v}`).join(", ");
+   return `${it.product} x${it.qty}${sizesText?` [${sizesText}]`:""}`;
+  }).join("; ");
   return [o.num,o.client,o.contact||"",o.phone||"",itemsText,orderTotalQty(o),o.orderDate||"",o.due||"",stageLabel(o.stage),o.priority,(o.value||0).toFixed(2),(o.paid||0).toFixed(2),((o.value||0)-(o.paid||0)).toFixed(2),o.employee||"",o.notes||""];
  });
  downloadCSV(`jonel-orders-${TODAY}.csv`,headers,rows);
@@ -1353,24 +1356,20 @@ function renderPriceList(){
  ensurePriceList();
  const admin=isAdmin();
  const toolbar=document.getElementById("priceListToolbar");
- if(toolbar) toolbar.style.display=admin?"":"none";
+ if(toolbar) toolbar.style.display="";
  document.getElementById("priceListNote").textContent=admin
   ?"Prices apply per unit. Edit any field below — changes save automatically and everyone sees them next sync."
-  :"Prices apply per unit. Contact an admin to update pricing.";
+  :"Prices apply per unit. Anyone can add or update prices below — only an admin can remove an item.";
  el.innerHTML=db.priceList.map(item=>{
-  if(admin){
-   return `<tr>
-    <td><strong>${item.product}</strong></td>
-    <td><input type="number" min="0" step="0.01" value="${item.price}" style="width:110px" onchange="updatePriceListItem('${item.product.replace(/'/g,"\\'")}','price',this.value)"/></td>
-    <td><input type="text" value="${(item.notes||"").replace(/"/g,'&quot;')}" style="width:100%" placeholder="e.g. sizes 2XL+ add P10, bulk discount over 50" onchange="updatePriceListItem('${item.product.replace(/'/g,"\\'")}','notes',this.value)"/></td>
-    <td><button class="tiny" style="color:var(--danger);border-color:rgba(255,107,118,.4)" onclick="deletePriceListItem('${item.product.replace(/'/g,"\\'")}')">Remove</button></td>
-   </tr>`;
-  }
-  return `<tr><td><strong>${item.product}</strong></td><td>${fmtMoney(item.price)}</td><td>${item.notes||"—"}</td><td></td></tr>`;
+  return `<tr>
+   <td><strong>${item.product}</strong></td>
+   <td><input type="number" min="0" step="0.01" value="${item.price}" style="width:110px" onchange="updatePriceListItem('${item.product.replace(/'/g,"\\'")}','price',this.value)"/></td>
+   <td><input type="text" value="${(item.notes||"").replace(/"/g,'&quot;')}" style="width:100%" placeholder="e.g. sizes 2XL+ add P10, bulk discount over 50" onchange="updatePriceListItem('${item.product.replace(/'/g,"\\'")}','notes',this.value)"/></td>
+   <td>${admin?`<button class="tiny" style="color:var(--danger);border-color:rgba(255,107,118,.4)" onclick="deletePriceListItem('${item.product.replace(/'/g,"\\'")}')">Remove</button>`:""}</td>
+  </tr>`;
  }).join("")||'<tr><td colspan="4" class="empty">No products yet.</td></tr>';
 }
 function addPriceListItemPrompt(){
- if(!isAdmin()){toast("Only an admin can edit the price list");return}
  const name=prompt("New item name (e.g. Printing Only, Rush Order Fee, Corporate Golf Shirt):");
  if(!name)return;
  const trimmed=name.trim();if(!trimmed)return;
@@ -1388,7 +1387,6 @@ function deletePriceListItem(product){
  saveDB();renderAll();toast("Item removed");
 }
 async function updatePriceListItem(product,field,value){
- if(!isAdmin()){toast("Only an admin can edit the price list");renderPriceList();return}
  const item=db.priceList.find(x=>x.product===product);if(!item)return;
  if(field==="price") item.price=Number(value)||0;
  else item.notes=value;
