@@ -440,7 +440,8 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
       <div class="field"><label>Client Name</label><input id="ecName" required/></div>
       <div class="field" style="margin-top:12px"><label>Contact</label><input id="ecContact" placeholder="Contact person"/></div>
       <div class="field" style="margin-top:12px"><label>Phone</label><input id="ecPhone" placeholder="+267 7..."/></div>
-      <div class="note" style="margin-top:10px">This updates the name/contact/phone on every order on file for this client.</div>
+      <div class="field" style="margin-top:12px"><label>Color</label><input type="color" id="ecColor" style="height:44px;padding:4px;cursor:pointer"/></div>
+      <div class="note" style="margin-top:10px">This updates the name/contact/phone/color on every order on file for this client.</div>
       <div class="modal-actions"><button type="button" class="btn" onclick="closeModal('editCustomerModal')">Cancel</button><button class="btn primary" type="submit">Save Changes</button></div>
     </form>
   </div>
@@ -577,6 +578,7 @@ function mergeIncomingDB(next){
   if(!db.timers) db.timers=[];
   if(!db.stockMoves) db.stockMoves=[];
   if(!db.logs) db.logs=[];
+  if(!db.clientColors) db.clientColors={};
   normalizeEmployees();
   ensurePriceList();
   const mine=db.employees.find(e=>e.id===myEmployeeId);
@@ -751,7 +753,7 @@ function renderDashboard(){
  const grouped={};active.forEach(o=>grouped[o.stage]=(grouped[o.stage]||0)+1);const max=Math.max(...Object.values(grouped),1);
  document.getElementById("stageMetrics").innerHTML=Object.entries(grouped).sort((a,b)=>stageIndex(a[0])-stageIndex(b[0])).map(([s,v])=>`<div class="metric-line"><strong>${stageLabel(s)}</strong><div class="progress"><span style="width:${v/max*100}%"></span></div><span class="badge">${v}</span></div>`).join("")||'<div class="empty">No active orders</div>';
  const soon=[...active].sort((a,b)=>a.due.localeCompare(b.due)).slice(0,5);
- document.getElementById("dueSoon").innerHTML=soon.map(o=>{const d=dayDiff(TODAY,o.due),cl=d<0?"danger":d<=3?"warn":"ok";return `<div class="list-row"><div><strong style="font-size:12px">${o.client}</strong><div class="sub">${orderProductSummary(o)} · ${o.num}</div></div><div style="text-align:right"><span class="badge ${cl}">${d<0?Math.abs(d)+"d overdue":d===0?"Due today":d+"d"}</span><div class="sub">${dateText(o.due)}</div></div></div>`}).join("")||'<div class="empty">No open orders.</div>';
+ document.getElementById("dueSoon").innerHTML=soon.map(o=>{const d=dayDiff(TODAY,o.due),cl=d<0?"danger":d<=3?"warn":"ok";return `<div class="list-row"><div><strong style="font-size:12px">${clientDot(o.client)}${o.client}</strong><div class="sub">${orderProductSummary(o)} · ${o.num}</div></div><div style="text-align:right"><span class="badge ${cl}">${d<0?Math.abs(d)+"d overdue":d===0?"Due today":d+"d"}</span><div class="sub">${dateText(o.due)}</div></div></div>`}).join("")||'<div class="empty">No open orders.</div>';
  renderWorkingNow();
  renderOutstandingList();
 }
@@ -762,7 +764,7 @@ function renderOutstandingList(){
  host.innerHTML=unpaid.map(({o,bal})=>{
   const days=o.orderDate?dayDiff(o.orderDate,TODAY):0;
   const flagged=days>=14;
-  return `<div class="list-row"><div><strong style="font-size:12px">${o.client}</strong><div class="sub">${o.num} · ${orderProductSummary(o)}</div></div><div style="text-align:right"><span class="badge ${flagged?"danger":""}">${fmtMoney(bal)}</span><div class="sub">${flagged?days+"d unpaid":"balance due"}</div></div></div>`;
+  return `<div class="list-row"><div><strong style="font-size:12px">${clientDot(o.client)}${o.client}</strong><div class="sub">${o.num} · ${orderProductSummary(o)}</div></div><div style="text-align:right"><span class="badge ${flagged?"danger":""}">${fmtMoney(bal)}</span><div class="sub">${flagged?days+"d unpaid":"balance due"}</div></div></div>`;
  }).join("");
 }
 function renderWorkingNow(){
@@ -780,7 +782,7 @@ function renderOrders(){
  const admin=isAdmin();
  document.getElementById("ordersBody").innerHTML=arr.map(o=>{
   const d=dayDiff(TODAY,o.due),deadline=o.stage!=="delivered"&&d<0?`<span class="badge danger">${Math.abs(d)}d overdue</span>`:dateText(o.due);
-  return `<tr><td><strong style="cursor:pointer" onclick="viewOrder('${o.id}')">${o.num}</strong><div class="sub"><span class="badge ${priorityBadge(o.priority)}">${o.priority}</span></div></td><td>${o.client}</td><td>${orderProductSummary(o)}</td><td><strong>${orderTotalQty(o)}</strong></td><td>${deadline}</td><td><span class="badge ${statusBadge(o.stage)}">${stageLabel(o.stage)}</span></td><td style="min-width:120px"><div class="progress"><span style="width:${progressFor(o.stage)}%"></span></div><div class="sub">${progressFor(o.stage)}%</div></td><td>${fmtMoney(o.value)}<div class="sub">Bal ${fmtMoney(o.value-o.paid)}</div></td><td style="white-space:nowrap"><button class="tiny" onclick="viewOrder('${o.id}')">View</button>${admin?` <button class="tiny" style="color:var(--danger);border-color:rgba(255,107,118,.4)" onclick="deleteOrderById('${o.id}')">Delete</button>`:""}</td></tr>`
+  return `<tr><td><strong style="cursor:pointer" onclick="viewOrder('${o.id}')">${o.num}</strong><div class="sub"><span class="badge ${priorityBadge(o.priority)}">${o.priority}</span></div></td><td>${clientDot(o.client)}${o.client}</td><td>${orderProductSummary(o)}</td><td><strong>${orderTotalQty(o)}</strong></td><td>${deadline}</td><td><span class="badge ${statusBadge(o.stage)}">${stageLabel(o.stage)}</span></td><td style="min-width:120px"><div class="progress"><span style="width:${progressFor(o.stage)}%"></span></div><div class="sub">${progressFor(o.stage)}%</div></td><td>${fmtMoney(o.value)}<div class="sub">Bal ${fmtMoney(o.value-o.paid)}</div></td><td style="white-space:nowrap"><button class="tiny" onclick="viewOrder('${o.id}')">View</button>${admin?` <button class="tiny" style="color:var(--danger);border-color:rgba(255,107,118,.4)" onclick="deleteOrderById('${o.id}')">Delete</button>`:""}</td></tr>`
  }).join("")||'<tr><td colspan="9" class="empty">No matching orders.</td></tr>';
 }
 function toCSVValue(v){
@@ -813,7 +815,7 @@ function renderBoard(){
  const visibleStages=STAGES.filter(s=>!["delivered"].includes(s[1]));
  document.getElementById("productionBoard").innerHTML=visibleStages.map(([label,code])=>{
   const arr=db.orders.filter(o=>o.stage===code);
-  return `<div class="column"><h4>${label}<span class="column-count">${arr.length}</span></h4>${arr.map(o=>`<div class="order-card"><div class="client" style="cursor:pointer" onclick="viewOrder('${o.id}')">${o.client}</div><div class="meta">${orderProductSummary(o)} · ${orderTotalQty(o)} units<br/>Due ${dateText(o.due)} · ${o.employee||'—'}</div><span class="badge ${priorityBadge(o.priority)}">${o.priority}</span><div class="card-actions" style="margin-top:9px">${stageIndex(code)>0?`<button class="tiny" onclick="moveOrder('${o.id}',-1)">←</button>`:""}<button class="tiny" onclick="moveOrder('${o.id}',1)">Next →</button></div></div>`).join("")||'<div class="empty">No orders</div>'}</div>`;
+  return `<div class="column"><h4>${label}<span class="column-count">${arr.length}</span></h4>${arr.map(o=>`<div class="order-card"><div class="client" style="cursor:pointer" onclick="viewOrder('${o.id}')">${clientDot(o.client)}${o.client}</div><div class="meta">${orderProductSummary(o)} · ${orderTotalQty(o)} units<br/>Due ${dateText(o.due)} · ${o.employee||'—'}</div><span class="badge ${priorityBadge(o.priority)}">${o.priority}</span><div class="card-actions" style="margin-top:9px">${stageIndex(code)>0?`<button class="tiny" onclick="moveOrder('${o.id}',-1)">←</button>`:""}<button class="tiny" onclick="moveOrder('${o.id}',1)">Next →</button></div></div>`).join("")||'<div class="empty">No orders</div>'}</div>`;
  }).join("");
 }
 function moveOrder(id,dir){
@@ -824,7 +826,7 @@ function moveOrder(id,dir){
 function viewOrder(id){
  const o=db.orders.find(x=>x.id===id);if(!o)return;
  window._viewingOrderId=id;
- document.getElementById('vNum').textContent=`${o.num} — ${o.client}`;
+ document.getElementById('vNum').innerHTML=`${o.num} — ${clientDot(o.client)}${o.client}`;
  const balance=(o.value||0)-(o.paid||0);
  const items=orderItems(o);
  const itemsHTML=items.map(it=>{
@@ -1035,7 +1037,32 @@ function renderCustomers(){
  });
  const arr=Object.values(map).filter(c=>!q||c.name.toLowerCase().includes(q));
  const admin=isAdmin();
- customersBody.innerHTML=arr.map(c=>`<tr><td><strong>${c.name}</strong></td><td>${c.contact||"—"}</td><td>${c.phone||"—"}</td><td>${c.orders}</td><td>${c.units}</td><td>${fmtMoney(c.value)}</td><td>${dateText(c.last)}</td><td style="white-space:nowrap">${admin?`<button class="tiny" onclick="openEditCustomer('${c.name.replace(/'/g,"\\'")}')">Edit</button> <button class="tiny" style="color:var(--danger);border-color:rgba(255,107,118,.4)" onclick="deleteCustomer('${c.name.replace(/'/g,"\\'")}')">Delete</button>`:""}</td></tr>`).join("")||'<tr><td colspan="8" class="empty">No customers yet.</td></tr>';
+ customersBody.innerHTML=arr.map(c=>`<tr><td><strong>${clientDot(c.name)}${c.name}</strong></td><td>${c.contact||"—"}</td><td>${c.phone||"—"}</td><td>${c.orders}</td><td>${c.units}</td><td>${fmtMoney(c.value)}</td><td>${dateText(c.last)}</td><td style="white-space:nowrap">${admin?`<button class="tiny" onclick="openEditCustomer('${c.name.replace(/'/g,"\\'")}')">Edit</button> <button class="tiny" style="color:var(--danger);border-color:rgba(255,107,118,.4)" onclick="deleteCustomer('${c.name.replace(/'/g,"\\'")}')">Delete</button>`:""}</td></tr>`).join("")||'<tr><td colspan="8" class="empty">No customers yet.</td></tr>';
+}
+function hashColor(str){
+ let hash=0;
+ for(let i=0;i<(str||"").length;i++){ hash=(str.charCodeAt(i)+((hash<<5)-hash))|0; }
+ const hue=Math.abs(hash)%360;
+ return `hsl(${hue},60%,50%)`;
+}
+function clientColor(name){
+ if(db.clientColors&&db.clientColors[name]) return db.clientColors[name];
+ return hashColor(name);
+}
+function clientDot(name){
+ return `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${clientColor(name)};margin-right:6px;vertical-align:middle;flex:0 0 9px"></span>`;
+}
+function hslToHex(hsl){
+ const m=hsl.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+ if(!m) return "#0797c5";
+ let [_,h,s,l]=m.map(Number);
+ s/=100;l/=100;
+ const c=(1-Math.abs(2*l-1))*s, x=c*(1-Math.abs((h/60)%2-1)), mm=l-c/2;
+ let r=0,g=0,b=0;
+ if(h<60){r=c;g=x;b=0}else if(h<120){r=x;g=c;b=0}else if(h<180){r=0;g=c;b=x}
+ else if(h<240){r=0;g=x;b=c}else if(h<300){r=x;g=0;b=c}else{r=c;g=0;b=x}
+ const toHex=v=>Math.round((v+mm)*255).toString(16).padStart(2,"0");
+ return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 function openEditCustomer(name){
  if(!isAdmin()){toast("Only an admin can edit customers");return}
@@ -1044,6 +1071,8 @@ function openEditCustomer(name){
  document.getElementById("ecName").value=name;
  document.getElementById("ecContact").value=latest?.contact||"";
  document.getElementById("ecPhone").value=latest?.phone||"";
+ const currentColor=clientColor(name);
+ document.getElementById("ecColor").value=currentColor.startsWith("#")?currentColor:hslToHex(currentColor);
  document.getElementById("editCustomerModal").classList.add("open");
 }
 async function saveCustomerEdit(e){
@@ -1053,11 +1082,15 @@ async function saveCustomerEdit(e){
  const newName=document.getElementById("ecName").value.trim();
  const contact=document.getElementById("ecContact").value.trim();
  const phone=document.getElementById("ecPhone").value.trim();
+ const color=document.getElementById("ecColor").value;
  if(!newName)return;
  let count=0;
  db.orders.forEach(o=>{
   if(o.client===oldName){ o.client=newName;o.contact=contact;o.phone=phone;count++; }
  });
+ if(!db.clientColors) db.clientColors={};
+ if(oldName!==newName) delete db.clientColors[oldName];
+ db.clientColors[newName]=color;
  await saveDB();closeModal("editCustomerModal");renderAll();
  toast(`Updated ${count} order${count>1?"s":""} for ${newName}`);
 }
@@ -1432,6 +1465,7 @@ async function startApp(session){
  if(!db.timers) db.timers=[];
  if(!db.stockMoves) db.stockMoves=[];
  if(!db.logs) db.logs=[];
+ if(!db.clientColors) db.clientColors={};
  const fixedEmployees=normalizeEmployees();
  const createdPriceList=ensurePriceList();
  const createdEmp=linkEmployeeToSession(session);
