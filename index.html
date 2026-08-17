@@ -242,10 +242,13 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
     <header class="topbar">
       <div class="topbar-left" style="display:flex;align-items:center;gap:11px">
         <button class="mobile-menu" onclick="toggleSidebar()">☰</button>
-        <div><h1 id="pageTitle">Operations Dashboard</h1><div class="sub" id="pageSubtitle">Live view of orders, production, stock and staff.</div></div>
+        <div>
+          <h1 id="pageTitle">Operations Dashboard</h1>
+          <div class="sub" id="pageSubtitle">Live view of orders, production, stock and staff.</div>
+          <div id="identityLine" style="font-size:11px;color:var(--muted);margin-top:2px"><strong id="whoAmI" style="color:var(--text)">Operations Admin</strong> · <span id="loggedInEmail">Jonel Sportif</span> <span class="badge dark" id="roleBadge" style="display:none;margin-left:4px;vertical-align:middle">Admin</span></div>
+        </div>
       </div>
       <div class="actions">
-        <div class="desktop-only" style="text-align:right;margin-right:8px"><strong style="font-size:11px;display:block" id="whoAmI">Operations Admin</strong><span class="sub" id="loggedInEmail">Jonel Sportif</span> <span class="badge dark" id="roleBadge" style="display:none;margin-left:4px">Admin</span></div>
         <button class="btn" onclick="openGlobalSearch()" aria-label="Search">🔍</button>
         <button class="btn" onclick="syncNow()">⟳ Sync</button>
         <button class="btn desktop-only" id="backupBtn" onclick="exportFullBackupJSON()" style="display:none">⬇ Backup</button>
