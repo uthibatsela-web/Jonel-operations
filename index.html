@@ -153,6 +153,11 @@ body{background:radial-gradient(1100px 560px at 100% -8%,#eaf6fb 0%,rgba(234,246
 .stage-select-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
 .timeline-head{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-bottom:6px}
 .sync-note{font-size:10px;color:var(--muted);margin-top:2px}
+.size-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.size-cell label{display:block;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);margin:0 0 4px}
+.size-input{width:100%;text-align:center;padding:9px 2px;font-size:13px;font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+.size-input::-webkit-outer-spin-button,.size-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+@media(max-width:760px){.size-grid{grid-template-columns:repeat(5,1fr)}}
 
 /* ===== DARK MODE (black) ===== */
 :root{
@@ -1110,8 +1115,8 @@ function orderItemRowHTML(){
    </div>
    <div class="item-low-stock" style="margin-top:6px"></div>
    <label style="margin-top:10px">Sizes (optional)</label>
-   <div class="form-grid" style="grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:6px">
-     ${SIZES.map(s=>`<div><label style="font-size:9px">${s}</label><input type="number" class="item-size" data-size="${s}" min="0" value="0" style="padding:7px" oninput="onOrderItemsChanged()"/></div>`).join("")}
+   <div class="size-grid">
+     ${SIZES.map(s=>`<div class="size-cell field"><label>${s}</label><input type="number" inputmode="numeric" autocomplete="off" class="item-size size-input" data-size="${s}" min="0" value="0" oninput="onOrderItemsChanged()"/></div>`).join("")}
    </div>
  </div>`;
 }
