@@ -348,22 +348,23 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
         <div class="field"><label>Client</label><input id="fClient" required placeholder="e.g. Gaborone United"/></div>
         <div class="field"><label>Client Contact</label><input id="fContact" placeholder="Contact person"/></div>
         <div class="field"><label>Client Phone</label><input id="fPhone" placeholder="+267 7..."/></div>
-        <div class="field"><label>Product</label><select id="fProduct" required onchange="updateOrderLowStockWarning();suggestOrderValue()"></select><div id="orderLowStockWarning" style="margin-top:8px"></div></div>
-        <div class="field"><label>Quantity</label><input id="fQty" type="number" min="1" value="20" required oninput="suggestOrderValue()"/></div>
         <div class="field"><label>Order Date</label><input id="fOrderDate" type="date" required/></div>
         <div class="field"><label>Delivery Date</label><input id="fDue" type="date" required/></div>
-        <div class="field"><label>Order Value (P)</label><input id="fValue" type="number" min="0" step="0.01" value="0"/></div>
-        <div class="field"><label>Amount Paid (P)</label><input id="fPaid" type="number" min="0" step="0.01" value="0"/></div>
         <div class="field"><label>Priority</label><select id="fPriority"><option>Normal</option><option>High</option><option>Urgent</option><option>Low</option></select></div>
         <div class="field"><label>Assigned Employee</label><select id="fEmployee"></select></div>
-        <div class="field"><label>XS</label><input id="sizeXS" type="number" min="0" value="0"/></div>
-        <div class="field"><label>S</label><input id="sizeS" type="number" min="0" value="0"/></div>
-        <div class="field"><label>M</label><input id="sizeM" type="number" min="0" value="0"/></div>
-        <div class="field"><label>L</label><input id="sizeL" type="number" min="0" value="0"/></div>
-        <div class="field"><label>XL</label><input id="sizeXL" type="number" min="0" value="0"/></div>
-        <div class="field"><label>2XL</label><input id="size2XL" type="number" min="0" value="0"/></div>
-        <div class="field" style="grid-column:1/-1"><label>Notes</label><textarea id="fNotes" placeholder="Colours, fabric, printing method, client requirements..."></textarea></div>
+        <div class="field"><label>Order Value (P)</label><input id="fValue" type="number" min="0" step="0.01" value="0"/></div>
+        <div class="field"><label>Amount Paid (P)</label><input id="fPaid" type="number" min="0" step="0.01" value="0"/></div>
       </div>
+
+      <div class="divider"></div>
+      <div class="row-between" style="margin-bottom:10px">
+        <strong style="font-size:14px">Order Items</strong>
+        <span class="badge dark" id="orderItemsTotalBadge">0 units</span>
+      </div>
+      <div id="orderItemsContainer"></div>
+      <button type="button" class="btn secondary" onclick="addOrderItemRow()">+ Add Another Item</button>
+
+      <div class="field" style="margin-top:16px"><label>Notes</label><textarea id="fNotes" placeholder="Colours, fabric, printing method, client requirements..."></textarea></div>
       <div class="modal-actions"><button type="button" class="btn" onclick="closeModal('orderModal')">Cancel</button><button class="btn primary" type="submit">Create Order</button></div>
     </form>
   </div>
@@ -461,21 +462,14 @@ const customersBody=document.getElementById("customersBody");
 const fClient=document.getElementById("fClient");
 const fContact=document.getElementById("fContact");
 const fPhone=document.getElementById("fPhone");
-const fProduct=document.getElementById("fProduct");
-const fQty=document.getElementById("fQty");
 const fOrderDate=document.getElementById("fOrderDate");
 const fDue=document.getElementById("fDue");
 const fValue=document.getElementById("fValue");
 const fPaid=document.getElementById("fPaid");
 const fPriority=document.getElementById("fPriority");
 const fEmployee=document.getElementById("fEmployee");
-const sizeXS=document.getElementById("sizeXS");
-const sizeS=document.getElementById("sizeS");
-const sizeM=document.getElementById("sizeM");
-const sizeL=document.getElementById("sizeL");
-const sizeXL=document.getElementById("sizeXL");
-const size2XL=document.getElementById("size2XL");
 const fNotes=document.getElementById("fNotes");
+const orderItemsContainer=document.getElementById("orderItemsContainer");
 
 const iName=document.getElementById("iName");
 const iCategory=document.getElementById("iCategory");
@@ -494,6 +488,7 @@ const STAGES=[
   ["New Order","new"],["Design","design"],["Awaiting Approval","approval"],["Printing","printing"],["Cutting","cutting"],["Sewing","sewing"],["Quality Control","qc"],["Packaging","packaging"],["Ready","ready"],["Delivered","delivered"]
 ];
 const PRODUCTS=["Football Kits","Netball Kits","Tracksuits","Arm Sleeves","Bucket Hats","Soccer T-Shirts","Golf T-Shirts","Other"];
+const SIZES=["XS","S","M","L","XL","2XL"];
 const MONTH_ABBR=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function ic(name){
  const paths={
@@ -724,7 +719,7 @@ function renderDashboard(){
  const grouped={};active.forEach(o=>grouped[o.stage]=(grouped[o.stage]||0)+1);const max=Math.max(...Object.values(grouped),1);
  document.getElementById("stageMetrics").innerHTML=Object.entries(grouped).sort((a,b)=>stageIndex(a[0])-stageIndex(b[0])).map(([s,v])=>`<div class="metric-line"><strong>${stageLabel(s)}</strong><div class="progress"><span style="width:${v/max*100}%"></span></div><span class="badge">${v}</span></div>`).join("")||'<div class="empty">No active orders</div>';
  const soon=[...active].sort((a,b)=>a.due.localeCompare(b.due)).slice(0,5);
- document.getElementById("dueSoon").innerHTML=soon.map(o=>{const d=dayDiff(TODAY,o.due),cl=d<0?"danger":d<=3?"warn":"ok";return `<div class="list-row"><div><strong style="font-size:12px">${o.client}</strong><div class="sub">${o.product} · ${o.num}</div></div><div style="text-align:right"><span class="badge ${cl}">${d<0?Math.abs(d)+"d overdue":d===0?"Due today":d+"d"}</span><div class="sub">${dateText(o.due)}</div></div></div>`}).join("")||'<div class="empty">No open orders.</div>';
+ document.getElementById("dueSoon").innerHTML=soon.map(o=>{const d=dayDiff(TODAY,o.due),cl=d<0?"danger":d<=3?"warn":"ok";return `<div class="list-row"><div><strong style="font-size:12px">${o.client}</strong><div class="sub">${orderProductSummary(o)} · ${o.num}</div></div><div style="text-align:right"><span class="badge ${cl}">${d<0?Math.abs(d)+"d overdue":d===0?"Due today":d+"d"}</span><div class="sub">${dateText(o.due)}</div></div></div>`}).join("")||'<div class="empty">No open orders.</div>';
  renderWorkingNow();
  renderOutstandingList();
 }
@@ -735,7 +730,7 @@ function renderOutstandingList(){
  host.innerHTML=unpaid.map(({o,bal})=>{
   const days=o.orderDate?dayDiff(o.orderDate,TODAY):0;
   const flagged=days>=14;
-  return `<div class="list-row"><div><strong style="font-size:12px">${o.client}</strong><div class="sub">${o.num} · ${o.product}</div></div><div style="text-align:right"><span class="badge ${flagged?"danger":""}">${fmtMoney(bal)}</span><div class="sub">${flagged?days+"d unpaid":"balance due"}</div></div></div>`;
+  return `<div class="list-row"><div><strong style="font-size:12px">${o.client}</strong><div class="sub">${o.num} · ${orderProductSummary(o)}</div></div><div style="text-align:right"><span class="badge ${flagged?"danger":""}">${fmtMoney(bal)}</span><div class="sub">${flagged?days+"d unpaid":"balance due"}</div></div></div>`;
  }).join("");
 }
 function renderWorkingNow(){
@@ -746,14 +741,14 @@ function renderWorkingNow(){
 
 function getFilteredOrders(){
  const q=(document.getElementById("orderSearch")?.value||"").toLowerCase(),f=document.getElementById("orderStatusFilter")?.value||"";
- return db.orders.filter(o=>(!f||o.stage===f)&&(!q||[o.client,o.num,o.product].some(x=>x.toLowerCase().includes(q))));
+ return db.orders.filter(o=>(!f||o.stage===f)&&(!q||[o.client,o.num,o.product].some(x=>x.toLowerCase().includes(q))||orderItems(o).some(it=>it.product.toLowerCase().includes(q))));
 }
 function renderOrders(){
  const arr=getFilteredOrders();
  const admin=isAdmin();
  document.getElementById("ordersBody").innerHTML=arr.map(o=>{
   const d=dayDiff(TODAY,o.due),deadline=o.stage!=="delivered"&&d<0?`<span class="badge danger">${Math.abs(d)}d overdue</span>`:dateText(o.due);
-  return `<tr><td><strong style="cursor:pointer" onclick="viewOrder('${o.id}')">${o.num}</strong><div class="sub"><span class="badge ${priorityBadge(o.priority)}">${o.priority}</span></div></td><td>${o.client}</td><td>${o.product}</td><td><strong>${o.qty}</strong></td><td>${deadline}</td><td><span class="badge ${statusBadge(o.stage)}">${stageLabel(o.stage)}</span></td><td style="min-width:120px"><div class="progress"><span style="width:${progressFor(o.stage)}%"></span></div><div class="sub">${progressFor(o.stage)}%</div></td><td>${fmtMoney(o.value)}<div class="sub">Bal ${fmtMoney(o.value-o.paid)}</div></td><td style="white-space:nowrap"><button class="tiny" onclick="viewOrder('${o.id}')">View</button>${admin?` <button class="tiny" style="color:var(--danger);border-color:rgba(255,107,118,.4)" onclick="deleteOrderById('${o.id}')">Delete</button>`:""}</td></tr>`
+  return `<tr><td><strong style="cursor:pointer" onclick="viewOrder('${o.id}')">${o.num}</strong><div class="sub"><span class="badge ${priorityBadge(o.priority)}">${o.priority}</span></div></td><td>${o.client}</td><td>${orderProductSummary(o)}</td><td><strong>${orderTotalQty(o)}</strong></td><td>${deadline}</td><td><span class="badge ${statusBadge(o.stage)}">${stageLabel(o.stage)}</span></td><td style="min-width:120px"><div class="progress"><span style="width:${progressFor(o.stage)}%"></span></div><div class="sub">${progressFor(o.stage)}%</div></td><td>${fmtMoney(o.value)}<div class="sub">Bal ${fmtMoney(o.value-o.paid)}</div></td><td style="white-space:nowrap"><button class="tiny" onclick="viewOrder('${o.id}')">View</button>${admin?` <button class="tiny" style="color:var(--danger);border-color:rgba(255,107,118,.4)" onclick="deleteOrderById('${o.id}')">Delete</button>`:""}</td></tr>`
  }).join("")||'<tr><td colspan="9" class="empty">No matching orders.</td></tr>';
 }
 function toCSVValue(v){
@@ -773,8 +768,11 @@ function downloadCSV(filename,headers,rows){
 function exportOrdersCSV(){
  const arr=getFilteredOrders();
  if(!arr.length){toast("No orders to export");return}
- const headers=["Order #","Client","Contact","Phone","Product","Qty","Order Date","Due Date","Stage","Priority","Value","Paid","Balance","Assigned","Notes"];
- const rows=arr.map(o=>[o.num,o.client,o.contact||"",o.phone||"",o.product,o.qty,o.orderDate||"",o.due||"",stageLabel(o.stage),o.priority,(o.value||0).toFixed(2),(o.paid||0).toFixed(2),((o.value||0)-(o.paid||0)).toFixed(2),o.employee||"",o.notes||""]);
+ const headers=["Order #","Client","Contact","Phone","Items","Total Qty","Order Date","Due Date","Stage","Priority","Value","Paid","Balance","Assigned","Notes"];
+ const rows=arr.map(o=>{
+  const itemsText=orderItems(o).map(it=>`${it.product} x${it.qty}`).join("; ");
+  return [o.num,o.client,o.contact||"",o.phone||"",itemsText,orderTotalQty(o),o.orderDate||"",o.due||"",stageLabel(o.stage),o.priority,(o.value||0).toFixed(2),(o.paid||0).toFixed(2),((o.value||0)-(o.paid||0)).toFixed(2),o.employee||"",o.notes||""];
+ });
  downloadCSV(`jonel-orders-${TODAY}.csv`,headers,rows);
  toast(`Exported ${arr.length} order${arr.length>1?"s":""}`);
 }
@@ -783,7 +781,7 @@ function renderBoard(){
  const visibleStages=STAGES.filter(s=>!["delivered"].includes(s[1]));
  document.getElementById("productionBoard").innerHTML=visibleStages.map(([label,code])=>{
   const arr=db.orders.filter(o=>o.stage===code);
-  return `<div class="column"><h4>${label}<span class="column-count">${arr.length}</span></h4>${arr.map(o=>`<div class="order-card"><div class="client" style="cursor:pointer" onclick="viewOrder('${o.id}')">${o.client}</div><div class="meta">${o.product} · ${o.qty} units<br/>Due ${dateText(o.due)} · ${o.employee||'—'}</div><span class="badge ${priorityBadge(o.priority)}">${o.priority}</span><div class="card-actions" style="margin-top:9px">${stageIndex(code)>0?`<button class="tiny" onclick="moveOrder('${o.id}',-1)">←</button>`:""}<button class="tiny" onclick="moveOrder('${o.id}',1)">Next →</button></div></div>`).join("")||'<div class="empty">No orders</div>'}</div>`;
+  return `<div class="column"><h4>${label}<span class="column-count">${arr.length}</span></h4>${arr.map(o=>`<div class="order-card"><div class="client" style="cursor:pointer" onclick="viewOrder('${o.id}')">${o.client}</div><div class="meta">${orderProductSummary(o)} · ${orderTotalQty(o)} units<br/>Due ${dateText(o.due)} · ${o.employee||'—'}</div><span class="badge ${priorityBadge(o.priority)}">${o.priority}</span><div class="card-actions" style="margin-top:9px">${stageIndex(code)>0?`<button class="tiny" onclick="moveOrder('${o.id}',-1)">←</button>`:""}<button class="tiny" onclick="moveOrder('${o.id}',1)">Next →</button></div></div>`).join("")||'<div class="empty">No orders</div>'}</div>`;
  }).join("");
 }
 function moveOrder(id,dir){
@@ -796,17 +794,22 @@ function viewOrder(id){
  window._viewingOrderId=id;
  document.getElementById('vNum').textContent=`${o.num} — ${o.client}`;
  const balance=(o.value||0)-(o.paid||0);
- const sizesText=Object.entries(o.sizes||{}).filter(([k,v])=>v>0).map(([k,v])=>`${k}:${v}`).join(', ')||'—';
+ const items=orderItems(o);
+ const itemsHTML=items.map(it=>{
+  const sizesText=Object.entries(it.sizes||{}).filter(([k,v])=>v>0).map(([k,v])=>`${k}:${v}`).join(', ');
+  return `<div class="list-row"><div><strong style="font-size:12px">${it.product}</strong>${sizesText?`<div class="sub">${sizesText}</div>`:''}</div><span class="badge dark">${it.qty} units</span></div>`;
+ }).join('')||'<div class="empty">No items.</div>';
  document.getElementById('viewOrderBody').innerHTML=`
   <div class="detail-grid">
     <div class="detail-field"><div class="k">Client Contact</div><div class="v">${o.contact||'—'}${o.phone?' · '+o.phone:''}</div></div>
     <div class="detail-field"><div class="k">Order / Due Date</div><div class="v">${dateText(o.orderDate)} → ${dateText(o.due)}</div></div>
-    <div class="detail-field"><div class="k">Product</div><div class="v">${o.product} × ${o.qty}</div></div>
-    <div class="detail-field"><div class="k">Sizes</div><div class="v">${sizesText}</div></div>
+    <div class="detail-field"><div class="k">Total Units</div><div class="v">${orderTotalQty(o)}</div></div>
     <div class="detail-field"><div class="k">Assigned</div><div class="v">${o.employee||'—'}</div></div>
     <div class="detail-field"><div class="k">Value / Paid</div><div class="v">${fmtMoney(o.value)} / ${fmtMoney(o.paid)}</div></div>
     <div class="detail-field"><div class="k">Balance</div><div class="v">${fmtMoney(balance)}</div></div>
   </div>
+  <div class="timeline-head">Items</div>
+  <div class="list" style="margin-bottom:14px">${itemsHTML}</div>
   ${o.notes?`<div class="detail-field" style="margin-bottom:14px"><div class="k">Notes</div><div class="v">${o.notes}</div></div>`:''}
   <div class="stage-select-row">
     <div class="field"><label>Stage</label><select id="vStage" onchange="setOrderStage('${o.id}', this.value)">${STAGES.map(s=>`<option value="${s[1]}" ${o.stage===s[1]?'selected':''}>${s[0]}</option>`).join('')}</select></div>
@@ -853,7 +856,7 @@ function saveInventory(e){e.preventDefault();db.inventory.push({id:"i"+Date.now(
 function openAdjustment(id){aItemId.value=id;aQty.value="";aReason.value="";document.getElementById("adjustModal").classList.add("open")}
 function saveAdjustment(e){e.preventDefault();const item=db.inventory.find(x=>x.id===aItemId.value),qty=Number(aQty.value);if(!item)return;if(aType.value==="out"&&qty>item.qty){alert("Cannot issue more stock than is currently on hand.");return}item.qty=+(item.qty+(aType.value==="in"?qty:-qty)).toFixed(3);db.stockMoves.push({id:"m"+Date.now(),itemId:item.id,type:aType.value,qty,reason:aReason.value,at:new Date().toISOString()});saveDB();closeModal("adjustModal");renderAll();toast("Stock movement recorded")}
 
-function orderOptions(){return db.orders.filter(o=>o.stage!=="delivered").map(o=>`<option value="${o.id}">${o.num} · ${o.client} · ${o.product}</option>`).join("")}
+function orderOptions(){return db.orders.filter(o=>o.stage!=="delivered").map(o=>`<option value="${o.id}">${o.num} · ${o.client} · ${orderProductSummary(o)}</option>`).join("")}
 function renderEmployeeStrip(){
  const strip=document.getElementById("employeeStrip");
  strip.innerHTML=`<div class="employee-chip active" style="cursor:default">You: ${selectedEmployee}</div><button class="employee-chip" onclick="editMyDisplayName()">✎ Edit my name</button>`;
@@ -1009,13 +1012,13 @@ function renderGlobalSearchResults(){
  const q=document.getElementById("globalSearchInput").value.trim().toLowerCase();
  const host=document.getElementById("globalSearchResults");
  if(!q){host.innerHTML='<div class="empty">Start typing a client, order number, or product.</div>';return}
- const orderMatches=db.orders.filter(o=>[o.client,o.num,o.product].some(x=>(x||"").toLowerCase().includes(q))).slice(0,8);
+ const orderMatches=db.orders.filter(o=>[o.client,o.num,o.product].some(x=>(x||"").toLowerCase().includes(q))||orderItems(o).some(it=>it.product.toLowerCase().includes(q))).slice(0,8);
  const clientNames=[...new Set(db.orders.map(o=>o.client))].filter(c=>c.toLowerCase().includes(q)).slice(0,5);
  if(!orderMatches.length&&!clientNames.length){host.innerHTML='<div class="empty">No matches.</div>';return}
  let html="";
  if(orderMatches.length){
   html+=`<div class="sub" style="margin-bottom:6px">ORDERS</div>`;
-  html+=orderMatches.map(o=>`<div class="list-row" style="cursor:pointer" onclick="jumpToOrder('${o.id}')"><div><strong style="font-size:12px">${o.num} — ${o.client}</strong><div class="sub">${o.product} · ${stageLabel(o.stage)}</div></div><span class="badge ${statusBadge(o.stage)}">${stageLabel(o.stage)}</span></div>`).join("");
+  html+=orderMatches.map(o=>`<div class="list-row" style="cursor:pointer" onclick="jumpToOrder('${o.id}')"><div><strong style="font-size:12px">${o.num} — ${o.client}</strong><div class="sub">${orderProductSummary(o)} · ${stageLabel(o.stage)}</div></div><span class="badge ${statusBadge(o.stage)}">${stageLabel(o.stage)}</span></div>`).join("");
  }
  if(clientNames.length){
   html+=`<div class="sub" style="margin:12px 0 6px">CUSTOMERS</div>`;
@@ -1038,35 +1041,71 @@ function jumpToCustomer(name){
 }
 
 function openOrderModal(){
- fProduct.innerHTML=PRODUCTS.map(p=>`<option>${p}</option>`).join("");fEmployee.innerHTML=employeesList().map(e=>`<option>${e}</option>`).join("");
+ fEmployee.innerHTML=employeesList().map(e=>`<option>${e}</option>`).join("");
  fOrderDate.value=TODAY;fDue.value=isoPlusDays(14);document.getElementById("orderModal").classList.add("open");
  fValue.dataset.userEdited="";fValue.dataset.auto="";
- updateOrderLowStockWarning();
- suggestOrderValue();
+ orderItemsContainer.innerHTML="";
+ addOrderItemRow();
 }
-function updateOrderLowStockWarning(){
- const el=document.getElementById("orderLowStockWarning");
- if(!el)return;
- const label=fProduct.value||"";
- const keyword=(label.split(" ")[0]||"").toLowerCase();
- const related=keyword?db.inventory.filter(i=>i.qty<=i.min&&i.name.toLowerCase().includes(keyword)):[];
- const allLow=db.inventory.filter(i=>i.qty<=i.min);
- if(related.length){
-  el.innerHTML=`<div class="badge danger" style="margin-bottom:4px">⚠ Possibly related, low stock</div><div style="font-size:12px;color:var(--muted)">${related.map(i=>`${i.name} (${i.qty} ${i.unit} left)`).join(", ")}</div>`;
- } else if(allLow.length){
-  el.innerHTML=`<div style="font-size:11px;color:var(--muted)">${allLow.length} other item${allLow.length>1?"s":""} currently low on stock — <a href="#" onclick="event.preventDefault();closeModal('orderModal');showPage('inventory')" style="color:var(--accent)">check Inventory</a></div>`;
- } else {
-  el.innerHTML="";
- }
+function orderItemRowHTML(){
+ return `<div class="card section order-item-row" style="margin-bottom:10px;padding:14px">
+   <div class="row-between" style="margin-bottom:10px">
+     <strong style="font-size:12px">Item</strong>
+     <button type="button" class="tiny" onclick="removeOrderItemRow(this)">Remove</button>
+   </div>
+   <div class="form-grid">
+     <div class="field"><label>Product</label><select class="item-product" onchange="onOrderItemsChanged()">${PRODUCTS.map(p=>`<option>${p}</option>`).join("")}</select></div>
+     <div class="field"><label>Quantity</label><input type="number" class="item-qty" min="1" value="10" oninput="onOrderItemsChanged()"/></div>
+   </div>
+   <div class="item-low-stock" style="margin-top:6px"></div>
+   <label style="margin-top:10px">Sizes (optional)</label>
+   <div class="form-grid" style="grid-template-columns:repeat(6,1fr);gap:6px">
+     ${SIZES.map(s=>`<div><label style="font-size:9px">${s}</label><input type="number" class="item-size" data-size="${s}" min="0" value="0" style="padding:7px" oninput="onOrderItemsChanged()"/></div>`).join("")}
+   </div>
+ </div>`;
 }
-function suggestOrderValue(){
+function addOrderItemRow(){
+ orderItemsContainer.insertAdjacentHTML("beforeend",orderItemRowHTML());
+ onOrderItemsChanged();
+}
+function removeOrderItemRow(btn){
+ const rows=orderItemsContainer.querySelectorAll(".order-item-row");
+ if(rows.length<=1){toast("An order needs at least one item");return}
+ btn.closest(".order-item-row").remove();
+ onOrderItemsChanged();
+}
+function collectOrderItems(){
+ return [...orderItemsContainer.querySelectorAll(".order-item-row")].map(row=>{
+  const product=row.querySelector(".item-product").value;
+  const qty=Number(row.querySelector(".item-qty").value)||0;
+  const sizes={};
+  row.querySelectorAll(".item-size").forEach(inp=>{ sizes[inp.dataset.size]=Number(inp.value)||0; });
+  return {product,qty,sizes};
+ });
+}
+function onOrderItemsChanged(){
+ const rows=orderItemsContainer.querySelectorAll(".order-item-row");
+ rows.forEach(row=>{
+  const product=row.querySelector(".item-product").value;
+  const keyword=(product.split(" ")[0]||"").toLowerCase();
+  const related=keyword?db.inventory.filter(i=>i.qty<=i.min&&i.name.toLowerCase().includes(keyword)):[];
+  const warnEl=row.querySelector(".item-low-stock");
+  warnEl.innerHTML=related.length?`<span class="badge danger">⚠ Possibly related, low stock: ${related.map(i=>i.name).join(", ")}</span>`:"";
+ });
+ const items=collectOrderItems();
+ const totalQty=items.reduce((a,i)=>a+i.qty,0);
+ document.getElementById("orderItemsTotalBadge").textContent=`${totalQty} unit${totalQty===1?"":"s"}`;
+ suggestOrderValue(items);
+}
+function suggestOrderValue(items){
  if(!db.priceList)return;
- const item=db.priceList.find(x=>x.product===fProduct.value);
- if(!item||!item.price)return;
- const qty=Number(fQty.value)||0;
- if(qty<=0)return;
  if(fValue.dataset.userEdited==="1")return;
- fValue.value=(item.price*qty).toFixed(2);
+ const total=(items||collectOrderItems()).reduce((sum,it)=>{
+  const priced=db.priceList.find(x=>x.product===it.product);
+  return sum+((priced?.price||0)*(it.qty||0));
+ },0);
+ if(total<=0)return;
+ fValue.value=total.toFixed(2);
  fValue.dataset.auto="1";
 }
 fValue.addEventListener("input",()=>{ if(fValue.dataset.auto!=="1") fValue.dataset.userEdited="1"; fValue.dataset.auto=""; });
@@ -1075,15 +1114,19 @@ function reorderFromOrder(){
  closeModal("viewOrderModal");
  openOrderModal();
  fClient.value=o.client;fContact.value=o.contact||"";fPhone.value=o.phone||"";
- fProduct.value=o.product;
- fQty.value=o.qty;
  fNotes.value=o.notes||"";
  fPriority.value=o.priority||"Normal";
  fEmployee.value=o.employee||fEmployee.value;
- const sizes=o.sizes||{};
- sizeXS.value=sizes.XS||0;sizeS.value=sizes.S||0;sizeM.value=sizes.M||0;sizeL.value=sizes.L||0;sizeXL.value=sizes.XL||0;size2XL.value=sizes["2XL"]||0;
+ orderItemsContainer.innerHTML="";
+ orderItems(o).forEach(it=>{
+  addOrderItemRow();
+  const row=orderItemsContainer.lastElementChild;
+  row.querySelector(".item-product").value=it.product;
+  row.querySelector(".item-qty").value=it.qty;
+  row.querySelectorAll(".item-size").forEach(inp=>{ inp.value=(it.sizes&&it.sizes[inp.dataset.size])||0; });
+ });
+ onOrderItemsChanged();
  fValue.value=o.value||0;fPaid.value=0;fValue.dataset.userEdited="1";
- updateOrderLowStockWarning();
  toast(`Prefilled from ${o.num} — review and create`);
 }
 function closeModal(id){document.getElementById(id).classList.remove("open")}
@@ -1114,13 +1157,40 @@ function dedupeOrderNumbers(){
  });
  return fixedCount;
 }
+function orderItems(o){
+ if(o.items&&o.items.length) return o.items;
+ return [{product:o.product,qty:o.qty,sizes:o.sizes||{}}];
+}
+function orderProductSummary(o){
+ const items=orderItems(o);
+ if(items.length>1) return `${items.length} items (${items.map(i=>i.product).join(", ")})`;
+ return items[0].product;
+}
+function orderTotalQty(o){
+ return orderItems(o).reduce((a,i)=>a+(i.qty||0),0);
+}
 async function saveOrder(e){
  e.preventDefault();
- const totalSizes=["XS","S","M","L","XL","2XL"].reduce((a,s)=>a+Number(document.getElementById("size"+s).value||0),0);const qty=Number(fQty.value);
- if(totalSizes>0&&totalSizes!==qty){if(!confirm(`Size quantities total ${totalSizes}, but order quantity is ${qty}. Save anyway?`))return}
+ const items=collectOrderItems().filter(it=>it.qty>0);
+ if(!items.length){toast("Add at least one item with a quantity");return}
+ const mismatched=items.filter(it=>{ const sizeTotal=Object.values(it.sizes).reduce((a,b)=>a+b,0); return sizeTotal>0&&sizeTotal!==it.qty; });
+ if(mismatched.length){
+  const list=mismatched.map(it=>`${it.product}: sizes total ${Object.values(it.sizes).reduce((a,b)=>a+b,0)}, quantity ${it.qty}`).join("\n");
+  if(!confirm(`Some items' sizes don't add up to their quantity:\n\n${list}\n\nSave anyway?`))return;
+ }
+ const totalQty=items.reduce((a,i)=>a+i.qty,0);
  // pull the latest orders first so the number can't collide with one someone else just created
  try{ const fresh=await loadDB(); if(fresh&&fresh.orders) db.orders=fresh.orders; }catch(err){}
- const order={id:"o"+Date.now(),num:nextOrderNumber(),client:fClient.value.trim(),contact:fContact.value.trim(),phone:fPhone.value.trim(),product:fProduct.value,qty,orderDate:fOrderDate.value||TODAY,due:fDue.value,stage:"new",priority:fPriority.value,value:Number(fValue.value||0),paid:Number(fPaid.value||0),employee:fEmployee.value,sizes:{XS:+sizeXS.value,S:+sizeS.value,M:+sizeM.value,L:+sizeL.value,XL:+sizeXL.value,"2XL":+size2XL.value},notes:fNotes.value,history:[{ts:Date.now(),note:`Order created by ${selectedEmployee}`}]};
+ const order={
+  id:"o"+Date.now(),num:nextOrderNumber(),client:fClient.value.trim(),contact:fContact.value.trim(),phone:fPhone.value.trim(),
+  items,
+  product:items.length>1?"Multiple items":items[0].product,
+  qty:totalQty,
+  sizes:items.length===1?items[0].sizes:{},
+  orderDate:fOrderDate.value||TODAY,due:fDue.value,stage:"new",priority:fPriority.value,
+  value:Number(fValue.value||0),paid:Number(fPaid.value||0),employee:fEmployee.value,notes:fNotes.value,
+  history:[{ts:Date.now(),note:`Order created by ${selectedEmployee}`}]
+ };
  db.orders.push(order);
  saveDB();closeModal("orderModal");e.target.reset();renderAll();showPage("orders");toast("New order created: "+order.num)
 }
