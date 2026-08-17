@@ -391,9 +391,10 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
         <div class="field"><label>Item Name</label><input id="iName" required placeholder="e.g. Birdeye White 150gsm"/></div>
         <div class="field"><label>Category</label><select id="iCategory"><option>Fabrics</option><option>Finished Products</option><option>Production Materials</option><option>Trims</option><option>Packaging</option><option>Office & Samples</option></select></div>
         <div class="field"><label>Quantity</label><input id="iQty" required type="number" step=".1" min="0"/></div>
-        <div class="field"><label>Unit</label><select id="iUnit"><option>metres</option><option>units</option><option>rolls</option><option>boxes</option><option>litres</option></select></div>
+        <div class="field"><label>Unit</label><input id="iUnit" list="unitSuggestions" placeholder="e.g. metres, plastics, kg..." value="metres"/><datalist id="unitSuggestions"><option value="metres"></option><option value="units"></option><option value="rolls"></option><option value="boxes"></option><option value="litres"></option><option value="kg"></option><option value="packs"></option><option value="sheets"></option><option value="spools"></option><option value="pairs"></option><option value="plastics"></option></datalist></div>
         <div class="field"><label>Minimum Stock</label><input id="iMin" required type="number" step=".1" min="0"/></div>
         <div class="field"><label>Location</label><input id="iLocation" value="Office"/></div>
+        <div class="field" style="grid-column:1/-1"><label>Description (optional)</label><input id="iDesc" placeholder="e.g. 100m roll, pack of 250 small bags, box of 12..."/></div>
       </div>
       <div class="modal-actions"><button type="button" class="btn" onclick="closeModal('inventoryModal')">Cancel</button><button class="btn primary">Add Item</button></div>
     </form>
@@ -482,6 +483,7 @@ const iQty=document.getElementById("iQty");
 const iUnit=document.getElementById("iUnit");
 const iMin=document.getElementById("iMin");
 const iLocation=document.getElementById("iLocation");
+const iDesc=document.getElementById("iDesc");
 
 const aItemId=document.getElementById("aItemId");
 const aType=document.getElementById("aType");
@@ -868,11 +870,11 @@ function deleteOrderConfirm(){
 
 function renderInventory(){
  const q=(document.getElementById("inventorySearch")?.value||"").toLowerCase();
- const arr=db.inventory.filter(i=>!q||[i.name,i.cat,i.loc].some(x=>x.toLowerCase().includes(q)));
- document.getElementById("inventoryGrid").innerHTML=arr.map(i=>{const low=i.qty<=i.min;return `<div class="card stock-card"><div class="stock-top"><div><div class="stock-name">${i.name}</div><div class="sub">${i.cat} · ${i.loc}</div></div><span class="badge ${low?"danger":"ok"}">${low?"Low stock":"Good"}</span></div><div class="stock-qty">${i.qty.toLocaleString()}</div><div class="stock-unit">${i.unit} on hand · minimum ${i.min}</div><button class="btn" style="margin-top:14px;width:100%" onclick="openAdjustment('${i.id}')">Record Stock Movement</button></div>`}).join("")||'<div class="empty">No stock items yet — add your first one above.</div>';
+ const arr=db.inventory.filter(i=>!q||[i.name,i.cat,i.loc,i.desc||""].some(x=>x.toLowerCase().includes(q)));
+ document.getElementById("inventoryGrid").innerHTML=arr.map(i=>{const low=i.qty<=i.min;return `<div class="card stock-card"><div class="stock-top"><div><div class="stock-name">${i.name}</div><div class="sub">${i.cat} · ${i.loc}</div></div><span class="badge ${low?"danger":"ok"}">${low?"Low stock":"Good"}</span></div><div class="stock-qty">${i.qty.toLocaleString()}</div><div class="stock-unit">${i.unit} on hand · minimum ${i.min}</div>${i.desc?`<div class="sub" style="margin-top:4px">${i.desc}</div>`:""}<button class="btn" style="margin-top:14px;width:100%" onclick="openAdjustment('${i.id}')">Record Stock Movement</button></div>`}).join("")||'<div class="empty">No stock items yet — add your first one above.</div>';
 }
 function openInventoryModal(){document.getElementById("inventoryModal").classList.add("open")}
-function saveInventory(e){e.preventDefault();db.inventory.push({id:"i"+Date.now(),name:iName.value,cat:iCategory.value,qty:Number(iQty.value),min:Number(iMin.value),unit:iUnit.value,loc:iLocation.value||"Office"});saveDB();closeModal("inventoryModal");e.target.reset();iLocation.value="Office";renderAll();toast("Inventory item added")}
+function saveInventory(e){e.preventDefault();db.inventory.push({id:"i"+Date.now(),name:iName.value,cat:iCategory.value,qty:Number(iQty.value),min:Number(iMin.value),unit:iUnit.value,loc:iLocation.value||"Office",desc:iDesc.value.trim()});saveDB();closeModal("inventoryModal");e.target.reset();iLocation.value="Office";renderAll();toast("Inventory item added")}
 function openAdjustment(id){aItemId.value=id;aQty.value="";aReason.value="";document.getElementById("adjustModal").classList.add("open")}
 function saveAdjustment(e){e.preventDefault();const item=db.inventory.find(x=>x.id===aItemId.value),qty=Number(aQty.value);if(!item)return;if(aType.value==="out"&&qty>item.qty){alert("Cannot issue more stock than is currently on hand.");return}item.qty=+(item.qty+(aType.value==="in"?qty:-qty)).toFixed(3);db.stockMoves.push({id:"m"+Date.now(),itemId:item.id,type:aType.value,qty,reason:aReason.value,at:new Date().toISOString()});saveDB();closeModal("adjustModal");renderAll();toast("Stock movement recorded")}
 
