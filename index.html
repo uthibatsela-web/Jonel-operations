@@ -557,11 +557,15 @@ const supa = (SUPABASE_URL.startsWith("http") && window.supabase)
 
 async function loadDB(){
   if(!supa) return clone(DEMO);
-  try{
-    const {data,error}=await supa.from('ops_state').select('data').eq('id','main').single();
-    if(error) throw error;
-    if(data&&data.data&&data.data.orders) return data.data;
-  }catch(e){ console.warn('load failed',e); }
+  const {data,error}=await supa.from('ops_state').select('data').eq('id','main').single();
+  if(error){
+    // A genuine failure talking to Supabase — never silently substitute demo data here.
+    // Callers must catch this and keep whatever data they already have, not overwrite it.
+    console.warn('load failed',error);
+    throw error;
+  }
+  if(data&&data.data&&data.data.orders) return data.data;
+  // Query succeeded but the row is genuinely empty (first-ever run) — safe to seed with demo.
   return clone(DEMO);
 }
 async function saveDB(){
@@ -1458,7 +1462,14 @@ function applyPermissions(){
 async function startApp(session){
  appStarted=true;
  document.getElementById("loggedInEmail").textContent=session&&session.user?session.user.email:"Jonel Sportif";
- db=await loadDB();
+ let loadFailed=false;
+ try{
+  db=await loadDB();
+ }catch(e){
+  loadFailed=true;
+  db=clone(DEMO);
+  toast("Could not reach the database — showing sample data only. Tap ⟳ Sync once you're back online before making changes.");
+ }
  if(!db.employees||!db.employees.length) db.employees=clone(DEMO.employees);
  if(!db.timers) db.timers=[];
  if(!db.stockMoves) db.stockMoves=[];
@@ -1469,7 +1480,7 @@ async function startApp(session){
  const createdEmp=linkEmployeeToSession(session);
  const fixedDup=dedupeOrderNumbers();
  applyPermissions();
- if(createdEmp||fixedDup>0||createdPriceList||fixedEmployees){
+ if(!loadFailed&&(createdEmp||fixedDup>0||createdPriceList||fixedEmployees)){
   await saveDB();
   if(fixedDup>0) toast(`Fixed ${fixedDup} duplicate order number${fixedDup>1?"s":""}`);
  }
