@@ -258,7 +258,7 @@ body{background:radial-gradient(1100px 560px at 100% -8%,rgba(18,168,221,.09) 0%
         <button class="btn" onclick="syncNow()">⟳ Sync</button>
         <button class="btn desktop-only" id="backupBtn" onclick="exportFullBackupJSON()" style="display:none">⬇ Backup</button>
         <input type="file" id="restoreFileInput" accept="application/json" style="display:none" onchange="restoreBackupFile(event)"/>
-        <button class="btn desktop-only" id="restoreBtn" onclick="document.getElementById('restoreFileInput').click()" style="display:none">⬆ Restore</button>
+        <button class="btn desktop-only" id="restoreBtn" onclick="document.getElementById('restoreFileInput').click()" style="display:none">⬆ Import Backup</button>
         <button class="btn desktop-only" id="resetDemoBtn" onclick="clearAllData()" style="display:none">Clear all data</button>
         <button class="btn desktop-only" onclick="doLogout()">Log out</button>
         <button class="btn primary" onclick="openOrderModal()">+ New Order</button>
@@ -639,7 +639,7 @@ function exportFullBackupJSON(){
 }
 async function restoreBackupFile(event){
  const fileInput=event.target;
- if(!isAdmin()){toast("Only an admin can restore a backup");fileInput.value="";return}
+ if(!isAdmin()){toast("Only an admin can import a backup");fileInput.value="";return}
  const file=fileInput.files[0];
  if(!file){return}
  try{
@@ -650,26 +650,27 @@ async function restoreBackupFile(event){
    fileInput.value="";
    return;
   }
-  const summary=`Orders: ${parsed.orders.length}\nInventory items: ${(parsed.inventory||[]).length}\nWork log entries: ${(parsed.logs||[]).length}\nEmployees: ${(parsed.employees||[]).length}`;
-  if(!confirm(`Restore this backup file?\n\n${summary}\n\nThis REPLACES all current shared data for everyone on the team. This cannot be undone.`)){
+  const incomingOrders=parsed.orders||[];
+  const incomingInventory=parsed.inventory||[];
+  const existingNums=new Set(db.orders.map(o=>o.num));
+  const newOrders=incomingOrders.filter(o=>!existingNums.has(o.num));
+  const skipped=incomingOrders.length-newOrders.length;
+  const existingInvNames=new Set(db.inventory.map(i=>i.name));
+  const newInv=incomingInventory.filter(i=>!existingInvNames.has(i.name));
+  const summary=`This file has ${incomingOrders.length} order(s) and ${incomingInventory.length} inventory item(s).\n\n${newOrders.length} new order(s) and ${newInv.length} new inventory item(s) will be ADDED to what you already have.${skipped>0?`\n${skipped} order(s) already exist (matching order number) and will be skipped.`:""}\n\nYour employees, roles, price list and everything else stay exactly as they are.`;
+  if(!confirm(`Import this backup?\n\n${summary}`)){
    fileInput.value="";
    return;
   }
-  db=parsed;
-  if(!db.timers) db.timers=[];
-  if(!db.stockMoves) db.stockMoves=[];
-  if(!db.logs) db.logs=[];
-  if(!db.clientColors) db.clientColors={};
-  if(!db.employees||!db.employees.length) db.employees=clone(DEMO.employees);
-  normalizeEmployees();
-  ensurePriceList();
+  db.orders=db.orders.concat(newOrders);
+  db.inventory=db.inventory.concat(newInv);
   dedupeOrderNumbers();
   await saveDB();
   renderAll();
-  toast("Backup restored — every device will pick this up on next sync");
+  toast(`Imported ${newOrders.length} order(s) and ${newInv.length} inventory item(s)`);
  }catch(e){
   console.error(e);
-  toast("Could not read that file — make sure it's a Jonel Ops backup .json");
+  toast("Could not read that file — make sure it's a valid backup .json");
  }
  fileInput.value="";
 }
