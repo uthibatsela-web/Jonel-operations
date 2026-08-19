@@ -518,30 +518,14 @@ function ic(name){
 }
 const TODAY=new Date().toISOString().slice(0,10);
 const DEMO={
- employees:[{id:"e1",name:"Tebo",email:null,role:"staff"},{id:"e2",name:"Neo",email:null,role:"staff"},{id:"e3",name:"Kago",email:null,role:"staff"},{id:"e4",name:"Thato",email:null,role:"staff"},{id:"e5",name:"Lorato",email:null,role:"staff"},{id:"e6",name:"Mpho",email:null,role:"staff"}],
- orders:[
-  {id:"o1",num:"JON-2026-0087",client:"Gaborone United",contact:"Team Manager",phone:"+267 71 000 001",product:"Football Kits",qty:35,orderDate:"2026-08-02",due:"2026-08-20",stage:"sewing",priority:"High",value:14000,paid:8000,employee:"Tebo",sizes:{S:5,M:12,L:12,XL:6},notes:"Home and away kit",history:[{ts:Date.now()-9*86400000,note:"Order created by Tebo"},{ts:Date.now()-2*86400000,note:"Stage changed to Sewing by Tebo"}]},
-  {id:"o2",num:"JON-2026-0088",client:"BDF XI",contact:"Procurement",phone:"+267 72 000 002",product:"Tracksuits",qty:28,orderDate:"2026-08-04",due:"2026-08-22",stage:"printing",priority:"Normal",value:11200,paid:5600,employee:"Thato",sizes:{M:10,L:10,XL:8},notes:"Navy tracksuits",history:[{ts:Date.now()-7*86400000,note:"Order created by Thato"}]},
-  {id:"o3",num:"JON-2026-0089",client:"St Joseph's College",contact:"",phone:"",product:"Netball Kits",qty:18,orderDate:"2026-08-06",due:"2026-08-19",stage:"approval",priority:"Urgent",value:7200,paid:3600,employee:"Tebo",sizes:{S:6,M:8,L:4},notes:"Awaiting final sponsor placement",history:[{ts:Date.now()-5*86400000,note:"Order created by Tebo"}]},
-  {id:"o4",num:"JON-2026-0090",client:"ABC Holdings",contact:"Marketing",phone:"+267 73 000 003",product:"Golf T-Shirts",qty:44,orderDate:"2026-08-05",due:"2026-08-25",stage:"qc",priority:"Normal",value:9900,paid:9900,employee:"Neo",sizes:{M:16,L:16,XL:12},notes:"Corporate golf day",history:[{ts:Date.now()-6*86400000,note:"Order created by Neo"}]},
-  {id:"o5",num:"JON-2026-0091",client:"Mochudi Centre Chiefs",contact:"",phone:"",product:"Soccer T-Shirts",qty:60,orderDate:"2026-08-10",due:"2026-08-28",stage:"design",priority:"High",value:12600,paid:6300,employee:"Kago",sizes:{S:10,M:20,L:20,XL:10},notes:"Supporter shirts",history:[{ts:Date.now()-1*86400000,note:"Order created by Kago"}]},
-  {id:"o6",num:"JON-2026-0092",client:"Maun Sports Club",contact:"",phone:"",product:"Bucket Hats",qty:30,orderDate:"2026-08-12",due:"2026-08-30",stage:"new",priority:"Normal",value:3600,paid:1800,employee:"Mpho",sizes:{},notes:"Black / white reversible",history:[{ts:Date.now()-4*3600000,note:"Order created by Mpho"}]},
-  {id:"o7",num:"JON-2026-0083",client:"Police XI",contact:"",phone:"",product:"Football Kits",qty:26,orderDate:"2026-07-28",due:"2026-08-14",stage:"ready",priority:"Normal",value:10400,paid:10400,employee:"Neo",sizes:{M:10,L:10,XL:6},notes:"Ready for collection",history:[{ts:Date.now()-19*86400000,note:"Order created by Neo"}]},
- ],
- inventory:[
-  {id:"i1",name:"Birdeye White 150gsm",cat:"Fabrics",qty:82,min:30,unit:"metres",loc:"Office"},
-  {id:"i2",name:"Birdeye Black 150gsm",cat:"Fabrics",qty:24,min:30,unit:"metres",loc:"Office"},
-  {id:"i3",name:"Tracksuit Fabric – Navy",cat:"Fabrics",qty:12,min:25,unit:"metres",loc:"Office"},
-  {id:"i4",name:"Sublimation Paper",cat:"Production Materials",qty:7,min:5,unit:"rolls",loc:"Print Room"},
-  {id:"i5",name:"Black Ribbing",cat:"Trims",qty:19,min:10,unit:"metres",loc:"Office"},
-  {id:"i6",name:"Clear Garment Bags",cat:"Packaging",qty:140,min:75,unit:"units",loc:"Packing Area"},
- ],
- logs:[
-  {id:"l1",employee:"Neo",orderId:"o4",task:"Quality Control",start:new Date(Date.now()-6*3600000).toISOString(),end:new Date(Date.now()-5*3600000).toISOString(),notes:"Checked stitching and sponsor logo placement."},
-  {id:"l2",employee:"Tebo",orderId:"o3",task:"Design",start:new Date(Date.now()-7*3600000).toISOString(),end:new Date(Date.now()-5.2*3600000).toISOString(),notes:"Updated sponsor placement and prepared approval visual."},
- ],
+ employees:[],
+ orders:[],
+ inventory:[],
+ logs:[],
  timers:[],
- stockMoves:[]
+ stockMoves:[],
+ priceList:[],
+ clientColors:{}
 };
 let db=null; let selectedEmployee=null; let timerTick=null; let currentPage="dashboard"; let syncTick=null;
 
@@ -1492,10 +1476,12 @@ function applyPermissions(){
  const badge=document.getElementById("roleBadge");
  const resetBtn=document.getElementById("resetDemoBtn");
  const backupBtn=document.getElementById("backupBtn");
+ const restoreBtn=document.getElementById("restoreBtn");
  const admin=isAdmin();
  if(badge) badge.style.display=admin?"inline-flex":"none";
  if(resetBtn) resetBtn.style.display=admin?"":"none";
  if(backupBtn) backupBtn.style.display=admin?"":"none";
+ if(restoreBtn) restoreBtn.style.display=admin?"":"none";
 }
 async function startApp(session){
  appStarted=true;
